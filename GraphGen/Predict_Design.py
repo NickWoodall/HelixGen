@@ -68,7 +68,6 @@ def mutate_relax(sP, direc = '', outName='out', outDirec='output/'):
                
 
 
-#change once I figure out how to do this
 straightDirec = '../data/4H_dataset/str_models/'
 
 if __name__ == "__main__":
@@ -77,7 +76,7 @@ if __name__ == "__main__":
     
     parser.add_argument("-i", "--inDirec", help="Input Structure Directory",default=straightDirec)
     parser.add_argument("-o", "--outDirec", help="Directory to output pdb files.", default = 'output/')
-    parser.add_argument("-g", "--graphGen", help="Location of GraphGen Network", default='data/best_checkpoint_epoch60.pt')
+    parser.add_argument("-g", "--graphGen", help="Location of GraphGen Network", default='data/Best_GraphGen.pt')
     parser.add_argument("-n", "--outName", help="Name to append to differentiate output")
     
     args = parser.parse_args()

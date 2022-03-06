@@ -1237,7 +1237,7 @@ if __name__ == "__main__":
     
     parser.add_argument("-b","--batch", help="Number of Endpoints to Generate: Default 32",  default=32, type=int)
     parser.add_argument("-o", "--outdirec", help="Output Directory. Needs / :Default output/", default="output/")
-    parser.add_argument("-i", "--infile", help="Location of generator network, No File extension. MinMax name needs to be of form {name}_mm", default="data/FullSet")
+    parser.add_argument("-i", "--infile", help="Location of generator network, No File extension. MinMax name needs to be of form {name}_mm", default="data/BestGenerator")
     parser.add_argument("-a", "--analyze_only", help="Just Display Analysis. Do not save pdb files",action="store_true")
     parser.add_argument("-e", "--endpoints", help="Input Data is numpy list of endpoints. Requires -i", action="store_true")
     parser.add_argument("-z", "--genInputSize", help="Size of vector to input to generator",default=12, type=int)

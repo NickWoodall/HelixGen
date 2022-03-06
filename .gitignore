@@ -1,23 +1,27 @@
 #Directories#
 **/figure_stuff
-**/output
 **/checkpoints
 **/plots
-**/bCov_4H_dataset
-**/csv_datasets
 **/pretrain_weights #from spec next master
 **/clusterRef
 GraphGen/scores/*
 GraphGen/output/*
+output/*
 **/GraphGen/log
 **/Clustering/data/clusterRef
 data/4H_dataset/LoopsToFit/*
 data/4H_dataset/models/*
 data/4H_dataset/str_models/*
+data/4H_dataset/str_models_test/*
 
 *.pkl
 *.jsonl
 *.json
 *.ipynb_checkpoints
+*.npz
+*.png
+log/*
 **/__pycache__
 loop_struct.txt
+*FullSet*
+refData_scaler.gz

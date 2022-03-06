@@ -417,8 +417,8 @@ def relax_stats3(sP_thiswork,sP_graphGenOrig,seqActual,
     save_scoreList(outDirec,nameList=nameList,scoreList=scoreList)
     return nameList, scoreList
 
-modelDirec = '../../../HelicalGenerator/HelicalGenerator/data/bCov_4H_dataset/BCov_Models'
-straightDirec = '../../../HelicalGenerator/HelicalGenerator/data/bCov_4H_dataset/BCov_Models_Straight'
+modelDirec = '../data/4H_dataset/models/'
+straightDirec = '../data/4H_dataset/str_models/'
 
 
 if __name__ == "__main__":
@@ -428,10 +428,10 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--inDirec", help="Input Structure Directory",default=straightDirec)
     parser.add_argument("-s", "--seqDirec", help="Input Directory for True sequence in pdb file format.",default=modelDirec)
     
-    parser.add_argument("-g", "--graphGen", help="Location of GraphGen Network", default='data/best_checkpoint_epoch60.pt')
-    parser.add_argument("--graphGenOriginal", help="Location of Original Dataset GraphGen Network", default='data/best_checkpoint_epoch67_graphGenData.pt')
+    parser.add_argument("-g", "--graphGen", help="Location of GraphGen Network", default='data/Best_GraphGen.pt')
+    parser.add_argument("--graphGenOriginal", help="Location of Original Dataset GraphGen Network", default='')
     parser.add_argument("-l", "--limitInput", help="Limit the number of trials.", default=100, type=int)
-    parser.add_argument("-o", "--output_name", help="Output name for Rosetta Scores", default='scores/test1')
+    parser.add_argument("-o", "--output_name", help="Output name for Rosetta Scores. def: scores/test1", default='scores/test1')
     
     parser.add_argument("-t", "--testDataset", help="Analyze the AA predictions for the test dataset.", action="store_true")
     parser.add_argument("-r", "--trainDataset", help="Analyze the AA predictions for the test dataset.", action="store_true")
