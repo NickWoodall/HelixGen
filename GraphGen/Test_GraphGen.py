@@ -502,7 +502,7 @@ if __name__ == "__main__":
         end_pred = time.time()
         
         predTime = end_pred - start_pred
-        print(f'{len(sP)} test sequences predicted in {predTime}.')
+        print(f'{len(sP)} test sequences predicted in {predTime:0.1f}s.')
         
         sA = get_pdb_seq(sP,direcName=args.seqDirec,removeEnding=False)
         print('Statistics for straight helix trained GraphGen')
@@ -551,7 +551,7 @@ if __name__ == "__main__":
         end_pred = time.time()
         
         predTime = end_pred - start_pred
-        print(f'{len(sP)} sequences predicted in {predTime}.')
+        print(f'{len(sP)} sequences predicted in {predTime:0.1f}s.')
         
         sA = get_pdb_seq(sP,direcName=args.seqDirec,removeEnding=False)
         

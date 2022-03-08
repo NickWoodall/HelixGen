@@ -68,7 +68,7 @@ python util/plot.py -i log/GAN_FullSet/loss/loss_FullSet.pkl -o log/GAN_FullSet/
 python TrainGAN.py data/Fits_4H_dm_phi.npz -o OnePer -s -p 1 -e 1000
 
 #remakes csv object loop data without re-fitting the loops, use -r to redo the loop fits
-python util_LoopCreation.py -j
+python util_LoopCreation.py -j 
 
 #produce generated loop structures from generator, use -a to not output the .pdb files and just get stats
 python LoopEndpoints.py -i data/FullSet -a
@@ -107,6 +107,6 @@ python TrainGraphGen.py -i data/refSet
 #move best checkpoint to data for convienience
 
 #test GraphGen network and generate, using 100 examples from the test 
-python Test_GraphGen.py -s ../data/4H_dataset/models -i ../data/4H_dataset/str_models/ -g data/best_checkpoint_epoch56.pt -t -l 100
+python Test_GraphGen.py -s ../data/4H_dataset/models -i ../data/4H_dataset/str_models/ -g data/{checkpoint name here} -t -l 100
 
 
