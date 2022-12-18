@@ -1,5 +1,7 @@
 *Deal with advice for environment creation, of fa_tfpy, specNetGPU, and TorchGraph
 *check restricted google drive downloads
+*check clustering specNet
+*Check Clustering Flags
 
 
 There are 3 modules here.

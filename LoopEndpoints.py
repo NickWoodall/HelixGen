@@ -1191,7 +1191,7 @@ def bb_analyze(name,batch=32,z=12,loopTry=True,print_output=True,analysisOnly=Tr
         print(f'Time Per Unique Topology: {(end-start)/len(ep1):.2f}s')
         print(f'Time Per Phi Bins Struct: {(end-start)/tot:.2f}s')
         
-def bb_loop(name,batch=32,z=12,loopTry=True,print_output=True,analysisOnly=False, outDirec='', maxTry=32):
+def bb_loop(name,batch=32,z=12,loopTry=True,print_output=True,analysisOnly=False, outDirec=''):
     """Gets backbones stats recon error, clashes, precent core and looped success for loaded endpoints."""
     
     epObj = ge.EP_Recon(name)
@@ -1212,8 +1212,8 @@ def bb_loop(name,batch=32,z=12,loopTry=True,print_output=True,analysisOnly=False
     print(f'Num Endpoints: {len(epObj.npose_list)}')
     print(f'No Clash Structures: {len(np.where(cc<1)[0])}')
     print(f'2 or less atoms clashes: {len(np.where(cc<3)[0])}')
-    print(f'Clashed Atoms Mean: {np.mean(cc):.2f}')
-    print(f'Percent Core: {np.mean(scn_core):.2f}')
+    print(f'Clashed Atoms Mean: {np.mean(cc):.2f} +/- {np.std(cc):.2f}')
+    print(f'Percent Core: {np.mean(scn_core):.2f} +/- {np.std(scn_core):.2f}')
     
     if loopTry:
         start = time.time()

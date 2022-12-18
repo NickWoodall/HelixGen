@@ -54,15 +54,24 @@ class BatchRecon():
         self.iu1 = np.triu_indices(self.size, 1)
 
     
-    def generate(self,z,batch_size=24):
+    def generate(self,z,input_z=None,batch_size=24):
         """Generate distance map."""
         
         self.batch_size = batch_size
         z_size = z
-
-        input_z = tf.random.uniform(shape=(batch_size, z_size), minval=-1, maxval=1)
         
-        g_output = self.g(input_z, training=False)
+        if input_z is not None:
+            input_z = input_z
+            batch_size = input_z.shape[0]
+            if batch_size<2:
+                batch_size = 2
+                input_z = np.repeat(input_z,2,axis=1)
+                
+            self.input_z = input_z
+        else:
+            self.input_z = tf.random.uniform(shape=(batch_size, z_size), minval=-1, maxval=1)
+        
+        g_output = self.g(self.input_z, training=False)
         g_output = tf.reshape(g_output, (batch_size, self.feats))
     
         g_output = g_output.numpy()

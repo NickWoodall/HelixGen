@@ -364,6 +364,7 @@ class HelixParameters():
 
         hLen = int((len_zero_ih-self.length())/2)
         xform1 = nu.xform_from_axis_angle_rad(aRot,-ang)
+        #input translation of axis of rotation to origin
         xform1[0][3] = self.translate_x() 
         xform1[1][3] = self.translate_y() 
         xform1[2][3] = self.translate_z()
@@ -377,6 +378,8 @@ class HelixParameters():
             
             
         xform2 = nu.xform_from_axis_angle_rad(vector,self.phi1())
+        
+        #manually moving space to the origin.
         self.npose[:,0] = self.npose[:,0] -  self.translate_x() 
         self.npose[:,1] = self.npose[:,1] -  self.translate_y() 
         self.npose[:,2] = self.npose[:,2] -  self.translate_z()    

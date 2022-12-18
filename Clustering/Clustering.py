@@ -199,7 +199,7 @@ class ClusterHelixParams():
         plt.yticks(yticks, self.cluster_labels +1)
         plt.xlabel('Silhouette Coeffecient')
         
-    def compare_Clusters(self):
+    def compare_Clusters(self,print_nums=True):
         """Plots cluster distribution from ref data set and generated helices.Same number of samples per cluster."""
         oClus = []
         nClus = []
@@ -218,7 +218,8 @@ class ClusterHelixParams():
         data1 = {'cluster':nums, 'amount': oClus, 'type': oldList}
         
         df = pd.DataFrame(data=data1)
-        print(df)
+        if print_nums:
+            print(df)
         sns.barplot(x="cluster", y="amount", data=data1, hue='type')
         return df 
         
