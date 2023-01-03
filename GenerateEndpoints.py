@@ -41,7 +41,7 @@ stub = tt[7:10].reshape(15,4)
 
 class BatchRecon():
     
-    def __init__(self, name,size=8, h4_feats=28):
+    def __init__(self, name, size=8, h4_feats=28, z_size = 12):
         """Load generator to make endpoints. Make sure MinMaxScaler is in the same directory with _mm added to end."""
         self.name = name
         self.g=tf.keras.models.load_model(f'{name}.h5')
@@ -52,6 +52,7 @@ class BatchRecon():
         self.size = size
         self.feats = h4_feats
         self.iu1 = np.triu_indices(self.size, 1)
+        self.z_size = 12
 
     
     def generate(self,z,input_z=None,batch_size=24):

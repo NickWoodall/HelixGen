@@ -103,7 +103,9 @@ def buttLoss(recon,mask,refMap,input_z=None,rate=0.05,batch_size=32,cycles=100):
             masked_loss = maskLoss(v,g_o,m2)
 
         g_grads = g_tape.gradient(masked_loss, input_z_var)
-
+        
+        ##### save for when I have to time to check changes
+        #this needs to be fixed, ?lower rate? and and move object creation out of loop
         optimizer = tf.keras.optimizers.SGD(learning_rate=rate)
         #optimizer = tf.keras.optimizers.Adadelta(learning_rate=1.0, rho=0.95)
         #optimizer = tf.keras.optimizers.Adam()
