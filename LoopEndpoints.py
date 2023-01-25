@@ -1082,7 +1082,7 @@ def add_loops(end_points, neighbors=10, length_mod=1, dist_cut=6, phiQueryNum=10
     
 
 def add_loops_cycle(endpoints_in, numCycles=5, neighInc=5, lmodInc=1,phiQueryNum=10, randMult=0,
-                    neighStart = 5, lengthStart=0, dist_cut=6,outDirec='output/', analysisOnly=True,printStats=True):
+                    neighStart = 5, lengthStart=0, dist_cut=6,maxPhi_cut=200,  outDirec='output/', analysisOnly=True,printStats=True):
     
     start = time.time()
     total_structures = 0
@@ -1112,7 +1112,7 @@ def add_loops_cycle(endpoints_in, numCycles=5, neighInc=5, lmodInc=1,phiQueryNum
             bL, iL, phiList, epGuide, epTrue, success = add_loops(endpoints[x],dist_cut=dist_cut,
                                                                   neighbors=neighStart + alpha[1]*neighInc,
                                                                   length_mod=lengthStart + alpha[0]*lmodInc, randMult=randMult, 
-                                                                  phiQueryNum=phiQueryNum, verbose=printStats)
+                                                                  phiQueryNum=phiQueryNum, verbose=printStats, maxPhi_cut=maxPhi_cut)
             if not success:
                 if len(bL)>0:
                     return bL
