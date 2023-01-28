@@ -70,6 +70,7 @@ python util/plot.py -i log/GAN_FullSet/loss/loss_FullSet.pkl -o log/GAN_FullSet/
 python TrainGAN.py data/Fits_4H_dm_phi.npz -o OnePer -s -p 1 -e 1000
 
 #remakes csv object loop data without re-fitting the loops, use -r to redo the loop fits
+#download the 
 python util_LoopCreation.py -j 
 
 #produce generated loop structures from generator, use -a to not output the .pdb files and just get stats

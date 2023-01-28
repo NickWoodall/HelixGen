@@ -216,14 +216,20 @@ class BatchRecon():
         return self.npose_list
     
     
-    
+#####MODDED EP Recon Init to input numpy array instead of saved npz file, might have broken something
+##### Added class method to fix
 class EP_Recon():
     """Parrallel Class to BatchRecon to loading endpoints from elsewhere and run LoopedEndpoints"""
     
-    def __init__(self, fname, direc=None):
-        
+    def __init__(self, endpoints_in):
+        self.endpoints_list = endpoints_in.copy()
+    
+    @classmethod 
+    def from_np_file(cls, fname):
+
         rr = np.load(f'{fname}.npz', allow_pickle=True)
-        self.endpoints_list = [rr[f] for f in rr.files][0]
+        endpoints_list = [rr[f] for f in rr.files][0]
+        return cls(endpoints_list)
     
     def to_npose(self):
 
@@ -293,7 +299,6 @@ class EP_Recon():
                 apList = np.vstack((apList,t))
                 
             self.npose_list.append(apList)
-
         return self.npose_list
 
 
