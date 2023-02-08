@@ -592,8 +592,17 @@ def buttress_ep_from_z_mask_only(gen_obj, gen_z,loss_masked, batchIndices,
     
     return out_ep, uInd
 
+def random_reduce(arrayList, num_to_keep = 20):
+    
+    if num_to_keep > arrayList.shape[0]:
+        num_to_keep =  arrayList.shape[0]
+    
+    indexer = np.random.choice(range(arrayList.shape[0]),num_to_keep ,replace=False)
+    
+    return indexer
+
 def buttress_ep_from_z_mask_mp(gen_obj, gen_z,loss_masked, loss_mp_ed, batchIndices, max_mp_loss = 1e-3,
-                                 max_loss_mask = 0.002, max_out=200, print_stats= False, mask_first=True):
+                                 max_loss_mask = 0.002, max_out=200, print_stats= False, mask_first=True, randomReduce=True):
     
     if mask_first:
         #make sure the input two helices are maintained in generator output
@@ -620,12 +629,21 @@ def buttress_ep_from_z_mask_mp(gen_obj, gen_z,loss_masked, loss_mp_ed, batchIndi
         
 
     if len(uInd) > max_out:
-        uInd = uInd[:max_out]
-        uiInd = uiInd[:max_out]
+        if randomReduce:
+            indexR = random_reduce(uInd, num_to_keep = max_out)
+            uInd = uInd[indexR]
+            uiInd = uiInd[indexR]
+            
+        else:
+            uInd = uInd[:max_out]
+            uiInd = uiInd[:max_out]
     
     if print_stats:
         print('Input Size: ',      len(sm))
         print('Passing Filters: ', len(uInd))
+        
+    if len(uInd) < 1:
+        return np.array([]), np.array([])
     
     
     
@@ -829,45 +847,10 @@ def vp(ep_in, guide_in,  name='test', max_out=10):
 # Z = XYZ[:,2];
 
 
-def generate_parabola(start, stop, h=[20,20,20], k=[20,30,40], num_points = 100):
-    #create a set of parabolas past through ([0,0]) start of helices to vertex ([[10,20],[10,30],[10,40]])
-    # (x-h)^2 = -4(a)(y-k)
-    # Solve for 'a' at x=0, y=0
-    # (0-h)^2 = -4(a)(0-k)
-    #      a  =  h^2/4k
-    h = np.array(h).reshape((-1,1))
-    k = np.array(k).reshape((-1,1))
-    a = np.square(h)/(4*k)
-    
-    #trace x from 0 to 10
-    # -4ay +4ak = (x-h)^2
-    # -4ay = (x-h)^2 - 4ak
-    #    y = ( (x-h)^2 - 4ak  ) / (-4a)
-    #    y = (4ak - (x-h)^2)
-    x = np.repeat(np.expand_dims(np.linspace(start,stop,num=100), axis=0), h.shape[0],axis=0)
-    z = np.divide(4*a*k -np.square(x-h), (4*a))
-   
-    x=np.expand_dims(x,axis=2)
-    z=np.expand_dims(z,axis=2)
-    y = np.zeros_like(x)
-    gen_para =  np.concatenate((x,y,z),axis = 2)
-    
-    return gen_para
-    
-#rotate parabola around the x axis
-# angleDeg = 90
-# gpi = 1
-# xfr=nu.xform_from_axis_angle_deg([1,0,0],angleDeg)
-# gp = np.hstack((g_para[gpi],np.ones_like(g_para[gpi,:,gpi].reshape((-1,1)))  ))
-# gp_z=nu.xform_npose(xfr,gp)[:,:3]
-# gp_z.shape
 
-# plt.scatter(gp_z[:,0], gp_z[:,2], alpha=0.5)
-# plt.axis('equal')
-# plt.show()
 
 def build_protein_on_guide(start_helices, guide_points, batch=200, 
-                           next_mp_dist = 9,mp_deviation_limit = 5):
+                           next_mp_dist = 9,mp_deviation_limit = 5, maxOut=1000):
     
     #this orientation promotes most likely growth to [0,0,1] (see distribution of reference set)
     sh_xy = align_points_to_XYplane(start_helices, keep_orig_trans=False)
@@ -926,7 +909,11 @@ def build_protein_on_guide(start_helices, guide_points, batch=200,
 
         out_ep, uInd = buttress_ep_from_z_mask_mp(gen_obj, output_z[-1], loss_mask[-1], loss_mp[-1], 
                                                   batchInd, max_mp_loss = 1e-3, max_loss_mask = 0.002, 
-                                                  max_out=1000, print_stats= True, mask_first=True)
+                                                  max_out=maxOut, print_stats= True, mask_first=True)
+        
+        if len(uInd) < 1:
+            print(f'Failed at helices length {output_ep_list[0].shape[1]/2}')
+            return output_ep_list
 
         fa, fa_reflect = align_generated_to_starting_ep(out_ep, current_quad_prez[uInd])
 
@@ -941,9 +928,138 @@ def build_protein_on_guide(start_helices, guide_points, batch=200,
 
         master_ep = np.concatenate((master_ep[uInd,:,:][mpfdb], final[:,4:,:]), axis=1)
         print(f'final pass filter' ,master_ep.shape[0])
+        if master_ep.shape[0]<2:
+            break
 
         #remake ci here with new indices
         final_mp = get_midpoint(final, helices_desired=[2,3])
+        dmp = np.linalg.norm(guide_points - np.expand_dims(final_mp,axis=1),axis=2)
+        ci = np.argmin(np.abs(dmp),axis=1)
+
+        end_dist = np.linalg.norm(guide_points[ci]-guide_points[-1],axis=1)
+        outOfRoom = end_dist<next_mp_dist
+
+        getOut = master_ep[outOfRoom]
+        master_ep = master_ep[~outOfRoom]
+        ci = ci[~outOfRoom]
+
+        if len(getOut)>1:
+            output_ep_list.append(getOut)
+
+        if len(master_ep) < 2:
+             roomToGrow = False
+                
+    return output_ep_list
+
+def build_protein_on_guide_clash(start_helices, guide_points, batch=200, 
+                           next_mp_dist = 9, mp_deviation_limit = 5, maxOut=1000, maxClash_num = 3):
+    
+    clash_thresh = 2.85
+    loopCount = 0
+    
+    #this orientation promotes most likely growth to [0,0,1] (see distribution of reference set)
+    sh_xy = align_points_to_XYplane(start_helices, keep_orig_trans=False)
+    ci = np.zeros(start_helices.shape[0],dtype=np.int32)
+    master_ep = sh_xy[:,:4,...]# if there are more than 4ep (2 helices) just take the first two
+    
+    roomToGrow = True
+    output_ep_list = []
+
+    while roomToGrow:
+        
+
+        #second set of added points unused except for maintaining distance maps indexing from gen
+        #(based around 4 helices)
+        current_quad_prez = np.concatenate((master_ep[:,-4:,:], master_ep[:,-4:,:] ), axis=1)
+
+        #get a point on the desired line on mp dist away
+        mp_start = get_midpoint(current_quad_prez,helices_desired=[0,1])
+
+        #guide_start = gp[ci]
+        vg = np.repeat( np.expand_dims(guide_points, axis=0) , current_quad_prez.shape[0],axis=0)
+        #make that move backwards much larger than next_mp_dist
+        boo = np.repeat(np.expand_dims(np.arange(vg.shape[1]),axis=0), vg.shape[0],axis=0)
+        boo2 = (boo<np.expand_dims(np.expand_dims(ci,axis=1),axis=1))[:,0]
+        vg[boo2] = -1e6
+
+
+        dmp = np.linalg.norm(vg - np.expand_dims(mp_start,axis=1),axis=2)
+        am = np.argmin(np.abs(dmp - next_mp_dist),axis=1)
+        print('max next indices',max(am))
+        
+        tmp = vg[np.ix_(np.array(range(vg.shape[0])), am, np.array(range(3)))][0]
+
+        cqpz_dmp = np.concatenate((current_quad_prez, np.expand_dims(tmp,axis=1)), axis=1)
+        print(current_quad_prez.shape)
+
+        #rotate points and desired midpoint into trilaterization place
+        current_quad_tmp = rotate_base_tri_Zplane(cqpz_dmp,  target_point=8, index_mobile=[1,2,3])
+
+        target_midpoint = current_quad_tmp[:, 8, :]
+        current_quad = current_quad_tmp[:, :8, :]
+        #create distance map for generator
+        start_dist = np.expand_dims(current_quad,axis=1) - np.expand_dims(current_quad,axis=2)
+        dist = np.sqrt(np.sum(start_dist**2, 3))
+        dist = dist.reshape((dist.shape[0],-1))
+
+        #indices for reference map
+        ref_map_base = ref_distmap_index(dist, num_helices=4)
+
+        #GPU ##33s  with 500,000 samples with 200 cycles (average of 7 runs)
+        #CPU ##39s
+        #maybe there is something I can do to make this more effecient, not pipeline bottleneck so okay
+        #for small models like this tensor flow says gpu may not be more effecient
+        output_z, loss_mask, loss_mp, batchInd = fullBUTT_GPU(gen_obj, ref_map_base , target_midpoint, 
+                                                            batch_size=batch, cycles=200, input_z=None, 
+                                                            rate=0.05, target_ep=[4,5,6,7], num_helices=4, 
+                                                            oneRef=True, scale=100.0, z_size=12)
+
+        out_ep, uInd = buttress_ep_from_z_mask_mp(gen_obj, output_z[-1], loss_mask[-1], loss_mp[-1], 
+                                                  batchInd, max_mp_loss = 1e-3, max_loss_mask = 0.002, 
+                                                  max_out=maxOut, print_stats= True, mask_first=True)
+        
+        if len(uInd) < 1:
+            print(f'Failed at helices length {len(master_ep)/2}')
+            return output_ep_list
+
+        fa, fa_reflect = align_generated_to_starting_ep(out_ep, current_quad_prez[uInd])
+
+        #use the reflection that promotes the most movement along the guide points
+        final_dr = determine_reflection(fa, fa_reflect, vg[uInd])
+
+        #ensure that midpoint is close enough
+        mpf = get_midpoint(final_dr,helices_desired=[2,3])
+        mpfdb = np.linalg.norm(tmp[uInd].squeeze()-mpf,axis=1) < mp_deviation_limit
+
+        final = final_dr[mpfdb]
+        
+        #remove steric clashes
+        build_epr = ge.EP_Recon(master_ep[uInd,:,:][mpfdb][:,-4:,:]) #pretty this need to be even slice
+        build_epr = ge.EP_Recon(master_ep[uInd,:,:][mpfdb][:,:,:])
+        
+            
+        query_epr = ge.EP_Recon(final[:,4:,:])
+        build = build_epr.to_npose()
+        query = query_epr.to_npose()
+        cc = np.zeros((len(build),),dtype=np.int32)
+        for x in range(len(build)) :
+            axa = scipy.spatial.distance.cdist(build[x],query[x])
+            cc[x] = np.sum(axa<clash_thresh)
+
+        remClash = cc<maxClash_num
+        
+        
+
+        
+        print(f'clash keep', np.sum(remClash))
+        
+        master_ep = np.concatenate((master_ep[uInd,:,:][mpfdb][remClash], final[:,4:,:][remClash]), axis=1)
+        print(f'final pass filter' ,master_ep.shape[0])
+        if master_ep.shape[0]<2:
+            break
+
+        #remake ci here with new indices
+        final_mp = get_midpoint(final[remClash], helices_desired=[2,3])
         dmp = np.linalg.norm(guide_points - np.expand_dims(final_mp,axis=1),axis=2)
         ci = np.argmin(np.abs(dmp),axis=1)
 
@@ -1010,20 +1126,15 @@ def get_reference_input(batch=1000):
     #random sample starting endpoints to buttress
     refi_all = list(range(ep_mp.shape[0]))
     ref_ind = np.array(random.sample(refi_all , batch))
-    #intialize set of points to match : 
-    gep = generate_parabola(0, 40, h=[40], k=[40], num_points = 100)[0]
-
     start_hel = ep_mp[ref_ind ,:4,...]
     
-    return start_hel, gep
+    return start_hel
 
-
-#ahhh recode this without the global nonsense I suppose
-
-# if tf.config.list_physical_devices('GPU'):
-#     device_name = tf.test.gpu_device_name()
-# else:
-#     device_name = 'CPU'
+#ahhh recode this without the global nonsense at some point
+if tf.config.list_physical_devices('GPU'):
+    device_name = tf.test.gpu_device_name()
+else:
+    device_name = 'CPU'
 rate=0.05
 # if ~devtype.__eq__(device_name):
 device_name = 'CPU'
@@ -1039,19 +1150,6 @@ with tf.device(device_name):
 output1=gen_obj.generate(z=12,batch_size=12) #example generator
 
 
-# out_ep = build_protein_on_guide(start_hel, gep, batch=200, 
-#                                  next_mp_dist = 11,mp_deviation_limit = 5)
-
-
-
-# vp(out_ep[0],gep,max_out=100)
-
-# sumL = 0
-
-# for x in out_ep:
-#     sumL += len(x)
-
-# print(sumL)
 
 
 

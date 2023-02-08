@@ -257,7 +257,7 @@ class EP_Recon():
             ang = angle_two_vectors(vector, zUnit)
 
 
-            length = int(np.round(np.linalg.norm(p2-p1)/1.51,decimals=0))
+            length = int(np.round(np.linalg.norm(p2-p1)/1.51,decimals=4)) #why zero here? quick mod to 4
             halfLen = int(length/2)
             aRot=np.hstack((axisRot,[1]))
 
