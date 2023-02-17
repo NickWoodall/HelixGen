@@ -592,69 +592,45 @@ def buttress_ep_from_z_mask_only(gen_obj, gen_z,loss_masked, batchIndices,
     
     return out_ep, uInd
 
-def random_reduce(arrayList, num_to_keep = 20):
+def mask_mp_filterBatch(gen_obj, gen_z, loss_masked, loss_mp_ed, batchIndices, max_mp_loss = 1e-3,
+                     max_loss_mask = 0.002, max_out=200, print_stats= False):
+    """Applies filter to backprop. Priotizes maximum batch diversity"""
     
-    if num_to_keep > arrayList.shape[0]:
-        num_to_keep =  arrayList.shape[0]
+    totalIndices = np.arange(len(batchIndices.flatten()))
+    #boolean arrays
+    mpl_b = loss_mp_ed < max_mp_loss
+    mask_b  = loss_masked < max_loss_mask
+    #indices for all passing 
+    mp_b2 = np.nonzero(np.sum(mpl_b,axis=1)==mpl_b.shape[-1])[0] #index size1 tuple
+    mask_b2 = np.nonzero(np.sum(mask_b,axis=1)==mask_b.shape[-1])[0]
+    #places where both passed filters
+    mpmaskind = np.intersect1d(mask_b2, mp_b2)
     
-    indexer = np.random.choice(range(arrayList.shape[0]),num_to_keep ,replace=False)
+    tI = totalIndices[mpmaskind]
+    bI = batchIndices[mpmaskind]
     
-    return indexer
+    indOut = np.array([],dtype=np.int32)
+    #pull out unique batches until desired number
+    while len(indOut)<max_out and len(tI)>0:
+        uBI, uBI_ind  = np.unique(bI,return_index=True)
+        indOut = np.concatenate((indOut,tI[uBI_ind]))
+        opInd = np.setdiff1d(np.arange(len(bI)), uBI_ind)
 
-def buttress_ep_from_z_mask_mp(gen_obj, gen_z,loss_masked, loss_mp_ed, batchIndices, max_mp_loss = 1e-3,
-                                 max_loss_mask = 0.002, max_out=200, print_stats= False, mask_first=True, randomReduce=True):
+        bI = bI[opInd]
+        tI = tI[opInd]
     
-    if mask_first:
-        #make sure the input two helices are maintained in generator output
-        sm = np.sum(loss_masked,axis=1)
-        smi = np.argsort(sm) #get sorted indices of lowest mask loss
-        sm_sort = sm[smi]
-        smi_o = smi[sm_sort < max_loss_mask]
-        smp = np.sum(loss_mp_ed, axis=1)
-
-        ind2 = np.array(range(len(sm)))
-        uInd = batchIndices[smi_o][smp[smi_o]<max_mp_loss]
-        uiInd = ind2[smi_o][smp[smi_o]<max_mp_loss]
-    else:
-        #make sure the input two helices are maintained in generator output
-        sm = np.sum(loss_mp_ed,axis=1)
-        smi = np.argsort(sm) #get sorted indices of lowest mask loss
-        sm_sort = sm[smi]
-        smi_o = smi[sm_sort < max_mp_loss]
-        smp = np.sum(loss_mp_ed, axis=1)
-
-        ind2 = np.array(range(len(sm)))
-        uInd = batchIndices[smi_o][smp[smi_o]<max_loss_mask]
-        uiInd = ind2[smi_o][smp[smi_o]<max_loss_mask]
+    
+    indOut= indOut[:max_out]
+    
         
-
-    if len(uInd) > max_out:
-        if randomReduce:
-            indexR = random_reduce(uInd, num_to_keep = max_out)
-            uInd = uInd[indexR]
-            uiInd = uiInd[indexR]
-            
-        else:
-            uInd = uInd[:max_out]
-            uiInd = uiInd[:max_out]
-    
-    if print_stats:
-        print('Input Size: ',      len(sm))
-        print('Passing Filters: ', len(uInd))
-        
-    if len(uInd) < 1:
-        return np.array([]), np.array([])
-    
-    
-    
-    identified_z = gen_z[uiInd]
-    
+    identified_z = gen_z[indOut]
+    #return ep from distance maps
     gen_obj.generate(z=12, input_z = identified_z, batch_size=identified_z.shape[0])
     gen_obj.MDS_reconstruct_()
     
     out_ep = np.array(gen_obj.reconsMDS_)
     
-    return out_ep, uInd
+    return out_ep, batchIndices[indOut]
     
 
 #the output of generator will not perfectly match the desired input, get best fit via Kabsch
@@ -846,111 +822,6 @@ def vp(ep_in, guide_in,  name='test', max_out=10):
 # Y = XYZ[:,1];
 # Z = XYZ[:,2];
 
-
-
-
-def build_protein_on_guide(start_helices, guide_points, batch=200, 
-                           next_mp_dist = 9,mp_deviation_limit = 5, maxOut=1000):
-    
-    #this orientation promotes most likely growth to [0,0,1] (see distribution of reference set)
-    sh_xy = align_points_to_XYplane(start_helices, keep_orig_trans=False)
-    ci = np.zeros(start_helices.shape[0],dtype=np.int32)
-    master_ep = sh_xy[:,:4,...]# if there are more than 4ep (2 helices) just take the first two
-    
-    roomToGrow = True
-    output_ep_list = []
-
-    while roomToGrow:
-
-        #second set of added points unused except for maintaining distance maps indexing from gen
-        #(based around 4 helices)
-        current_quad_prez = np.concatenate((master_ep[:,-4:,:], master_ep[:,-4:,:] ), axis=1)
-
-        #get a point on the desired line on mp dist away
-        mp_start = get_midpoint(current_quad_prez,helices_desired=[0,1])
-
-        #guide_start = gp[ci]
-        vg = np.repeat( np.expand_dims(guide_points, axis=0) , current_quad_prez.shape[0],axis=0)
-        #make that move backwards much larger than next_mp_dist
-        boo = np.repeat(np.expand_dims(np.arange(vg.shape[1]),axis=0), vg.shape[0],axis=0)
-        boo2 = (boo<np.expand_dims(np.expand_dims(ci,axis=1),axis=1))[:,0]
-        vg[boo2] = -1e6
-
-
-        dmp = np.linalg.norm(vg - np.expand_dims(mp_start,axis=1),axis=2)
-        am = np.argmin(np.abs(dmp - next_mp_dist),axis=1)
-        print('max next indices',max(am))
-        tmp = vg[np.ix_(np.array(range(vg.shape[0])), am, np.array(range(3)))][0]
-
-        cqpz_dmp = np.concatenate((current_quad_prez, np.expand_dims(tmp,axis=1)), axis=1)
-        print(current_quad_prez.shape)
-
-        #rotate points and desired midpoint into trilaterization place
-        current_quad_tmp = rotate_base_tri_Zplane(cqpz_dmp,  target_point=4, index_mobile=[1,2,3])
-
-        target_midpoint = current_quad_tmp[:, 8, :]
-        current_quad = current_quad_tmp[:, :8, :]
-        #create distance map for generator
-        start_dist = np.expand_dims(current_quad,axis=1) - np.expand_dims(current_quad,axis=2)
-        dist = np.sqrt(np.sum(start_dist**2, 3))
-        dist = dist.reshape((dist.shape[0],-1))
-
-        #indices for reference map
-        ref_map_base = ref_distmap_index(dist, num_helices=4)
-
-        #GPU ##33s  with 500,000 samples with 200 cycles (average of 7 runs)
-        #CPU ##39s
-        #maybe there is something I can do to make this more effecient, not pipeline bottleneck so okay
-        #for small models like this tensor flow says gpu may not be more effecient
-        output_z, loss_mask, loss_mp, batchInd = fullBUTT_GPU(gen_obj, ref_map_base , target_midpoint, 
-                                                            batch_size=100, cycles=200, input_z=None, 
-                                                            rate=0.05, target_ep=[4,5,6,7], num_helices=4, 
-                                                            oneRef=True, scale=100.0, z_size=12)
-
-        out_ep, uInd = buttress_ep_from_z_mask_mp(gen_obj, output_z[-1], loss_mask[-1], loss_mp[-1], 
-                                                  batchInd, max_mp_loss = 1e-3, max_loss_mask = 0.002, 
-                                                  max_out=maxOut, print_stats= True, mask_first=True)
-        
-        if len(uInd) < 1:
-            print(f'Failed at helices length {output_ep_list[0].shape[1]/2}')
-            return output_ep_list
-
-        fa, fa_reflect = align_generated_to_starting_ep(out_ep, current_quad_prez[uInd])
-
-        #use the reflection that promotes the most movement along the guide points
-        final_dr = determine_reflection(fa, fa_reflect, vg[uInd])
-
-        #ensure that midpoint is close enough
-        mpf = get_midpoint(final_dr,helices_desired=[2,3])
-        mpfdb = np.linalg.norm(tmp[uInd].squeeze()-mpf,axis=1) < mp_deviation_limit
-
-        final = final_dr[mpfdb]
-
-        master_ep = np.concatenate((master_ep[uInd,:,:][mpfdb], final[:,4:,:]), axis=1)
-        print(f'final pass filter' ,master_ep.shape[0])
-        if master_ep.shape[0]<2:
-            break
-
-        #remake ci here with new indices
-        final_mp = get_midpoint(final, helices_desired=[2,3])
-        dmp = np.linalg.norm(guide_points - np.expand_dims(final_mp,axis=1),axis=2)
-        ci = np.argmin(np.abs(dmp),axis=1)
-
-        end_dist = np.linalg.norm(guide_points[ci]-guide_points[-1],axis=1)
-        outOfRoom = end_dist<next_mp_dist
-
-        getOut = master_ep[outOfRoom]
-        master_ep = master_ep[~outOfRoom]
-        ci = ci[~outOfRoom]
-
-        if len(getOut)>1:
-            output_ep_list.append(getOut)
-
-        if len(master_ep) < 2:
-             roomToGrow = False
-                
-    return output_ep_list
-
 def build_protein_on_guide_clash(start_helices, guide_points, batch=200, 
                            next_mp_dist = 9, mp_deviation_limit = 5, maxOut=1000, maxClash_num = 3):
     
@@ -1009,14 +880,26 @@ def build_protein_on_guide_clash(start_helices, guide_points, batch=200,
         #CPU ##39s
         #maybe there is something I can do to make this more effecient, not pipeline bottleneck so okay
         #for small models like this tensor flow says gpu may not be more effecient
+        
+        start_loss = time.time()
+
+        print(f'Input Size: {ref_map_base.shape[0]*batch}')
+        
         output_z, loss_mask, loss_mp, batchInd = fullBUTT_GPU(gen_obj, ref_map_base , target_midpoint, 
                                                             batch_size=batch, cycles=200, input_z=None, 
                                                             rate=0.05, target_ep=[4,5,6,7], num_helices=4, 
                                                             oneRef=True, scale=100.0, z_size=12)
+        
+        end_loss = time.time()
+        print('backprop time : ',end_loss-start_loss)
 
-        out_ep, uInd = buttress_ep_from_z_mask_mp(gen_obj, output_z[-1], loss_mask[-1], loss_mp[-1], 
+        out_ep, uInd = mask_mp_filterBatch(gen_obj, output_z[-1], loss_mask[-1], loss_mp[-1], 
                                                   batchInd, max_mp_loss = 1e-3, max_loss_mask = 0.002, 
-                                                  max_out=maxOut, print_stats= True, mask_first=True)
+                                                  max_out=maxOut, print_stats= True)
+        
+        print(f'Passing Filters: {out_ep.shape[0]} ')
+        end_mds = time.time()
+        print('MDS time: ',end_mds-end_loss)
         
         if len(uInd) < 1:
             print(f'Failed at helices length {len(master_ep)/2}')
@@ -1034,9 +917,10 @@ def build_protein_on_guide_clash(start_helices, guide_points, batch=200,
         final = final_dr[mpfdb]
         
         #remove steric clashes
-        build_epr = ge.EP_Recon(master_ep[uInd,:,:][mpfdb][:,-4:,:]) #pretty this need to be even slice
-        build_epr = ge.EP_Recon(master_ep[uInd,:,:][mpfdb][:,:,:])
+        build_epr = ge.EP_Recon(master_ep[uInd,:,:][mpfdb][:,-6:,:]) #pretty this need to be even slice,okay to be full too
+        #build_epr = ge.EP_Recon(master_ep[uInd,:,:][mpfdb][:,:,:])
         
+        start_clash = time.time()
             
         query_epr = ge.EP_Recon(final[:,4:,:])
         build = build_epr.to_npose()
@@ -1048,10 +932,9 @@ def build_protein_on_guide_clash(start_helices, guide_points, batch=200,
 
         remClash = cc<maxClash_num
         
+        end_clash = time.time()
+        print('clash time: ', end_clash-start_clash)
         
-
-        
-        print(f'clash keep', np.sum(remClash))
         
         master_ep = np.concatenate((master_ep[uInd,:,:][mpfdb][remClash], final[:,4:,:][remClash]), axis=1)
         print(f'final pass filter' ,master_ep.shape[0])
@@ -1137,7 +1020,8 @@ else:
     device_name = 'CPU'
 rate=0.05
 # if ~devtype.__eq__(device_name):
-device_name = 'CPU'
+#just do cpu
+# device_name = 'CPU'
 print(f'device name {device_name}')
 
 gen="data/BestGenerator"

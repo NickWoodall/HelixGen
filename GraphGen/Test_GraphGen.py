@@ -152,7 +152,7 @@ def group_accuracy(matrix):
     AVILFYW = np.array([0,4,7,9,10,17,18,19])
     DE_KR = np.array([2,3,8,14])
     PG = np.array([5,12])
-    POLARS = np.array([2,3,6,8,11,13,14,15,16])
+    POLARS = np.array([2,3,6,8,11,13,14,15,16]) #D,E,H,K,N,Q,R,S,T
     # ref        0   1   2   3   4   5   6   7   8   9   10  11  12  13  14 15  16  17  18  19  
     alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
     si = len(alphabet)
@@ -160,15 +160,15 @@ def group_accuracy(matrix):
     pa = percentAccurate(matrix).astype(np.int32)
     phobic_a = percentAccurate(matrix, group=AILVF)
     charged_a = percentAccurate(matrix, group=DE_KR)
-    groupCharge = groupCorrect(matrix,group=POLARS)
+    groupCharge = groupCorrect(matrix,group=POLARS) 
     groupPho = groupCorrect(matrix,group=AILVF)
     print(f'GroupCharge {groupCharge}%')
     print(f'GroupPhobic {groupPho}%')
     print(f'Hydrophobic Accuracy AILVF {phobic_a}%')
     print(f'Charged Accuracy DE_RK {charged_a}%')
-    print(f' AILVF {pa[AILVF]}')
+    print(f' AFILV {pa[AILVF]}')
     print(f' DE KR {pa[DE_KR]}' )
-    print(f' P G {pa[PG]}')
+    print(f' G P {pa[PG]}')
     print('')
     
     
