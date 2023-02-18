@@ -46,18 +46,12 @@ tt = zero_ih.reshape(int(len(zero_ih)/5),5,4)
 stub = tt[7:10].reshape(15,4)
 
 
-# In[3]:
-
-
 #load distance maps
 def load_distance_map(name, dm_file='data/Fits_4H_dm_phi.npz'):
     rr = np.load(dm_file, allow_pickle=True)
     X_train, y_train , featNames = [rr[f] for f in rr.files]
     
     return X_train[y_train==name][:,:-4]
-
-
-# In[4]:
 
 
 def checkLoss2(testArray,refArray,mask):
@@ -128,9 +122,6 @@ def buttLoss(recon,mask,refMap,input_z=None,rate=0.05,batch_size=32,cycles=100):
     return recon, loss_final, z
 
 
-# In[5]:
-
-
 def buttress1_2_reference_protein(batch,refName='00d94cdcf922f50c6b9c82a8b57d6515_0001',
                                   gen="data/BestGenerator",cycles=1000):
     
@@ -157,11 +148,6 @@ def buttress1_2_reference_protein(batch,refName='00d94cdcf922f50c6b9c82a8b57d651
     brec.to_npose()
     
     return brec, loss_final
-    
-
-
-# In[6]:
-
 
 def align_helices(ref,pDirec,helix_list=[1,2],outDirec='output/'):
     """Aligns proteins in pDirec (directory) to ref (file) based on helices in helix list [starts at 1]"""

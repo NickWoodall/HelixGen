@@ -83,10 +83,6 @@ def extend_helix(build, res):
     
     return ext[:(res*5)]
 
-
-# In[5]:
-
-
 #methods to load txt file of loops and resave as numpy file
 
 
@@ -139,11 +135,6 @@ def transfer_loops_from_csv_to_numpy(name='all_loops', loopFile='all_loops_bCov.
     numpy_array_loops = load_csv_chunks(loopFile,direc=direcCSV)
     
     saveAsNumpy(numpy_array_loops,name,direc=direcOut)
-    
-
-
-# In[6]:
-
 
 def generate_loops_with_helices(loopFile = 'data/all_loops.npz',hL=10,outDirec='data/bCov_4H_dataset/BCov_LoopsToFit/'):
     """Extend straight helices on either side of loop for fitting with HelixFit."""
@@ -188,8 +179,6 @@ def fit_loops(name='loopFits', loopDirec='data/bCov_4H_dataset/BCov_LoopsToFit/'
 
         if i%1000 ==0:
             print(f'{i} fits done')
-
-
 
 
 def convert_fit_to_endpoints(loopFit_file='data/loopFits.csv', expected_helices=2):
@@ -250,7 +239,6 @@ def save_loopFeats(lF,lF_twoNorm, outDirec='data/', nameOut='LoopFeats'):
     
 
 if __name__ == "__main__":
-    #
     
     parser = argparse.ArgumentParser(description="Generates Loop numpy saves (full atom/features) for other scripts. Not specifying flag results in default names put in data/ directory.")
     
@@ -283,7 +271,7 @@ if __name__ == "__main__":
             generate_loops_with_helices(loopFile = args.infile,hL=10,outDirec=args.outdirec)
             
     elif args.fit_loops:
-        #requires
+        #requires -n, -d, -o
         if args.outdirec and args.name and args.direc:
             fit_loops(name=args.name, loopDirec=args.direc,outDirec=args.outdirec)
             

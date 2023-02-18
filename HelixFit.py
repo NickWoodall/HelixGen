@@ -22,6 +22,7 @@ import warnings
 import argparse
 import textwrap
 
+#reference straight helix, global
 zero_ih = nu.npose_from_file('util/zero_ih.pdb')
 tt = zero_ih.reshape(int(len(zero_ih)/5),5,4)
 stub = tt[7:10].reshape(15,4)
@@ -51,7 +52,7 @@ class HelixParameters():
     FromDict - Reads in values from a dictionary - Currently doing straight helices only
     FromEndpoints - Calculates midpoints and euler angles from helix endpoints return Hparam Object Straight Only
     
-    Also contains the methods for the rounds of fitting to lmfit. Maybe better stored elsewhere
+    Also contains the methods for the rounds of fitting to lmfit. 
     Also contains some rotation matrix/euler methods
     
     
@@ -239,7 +240,7 @@ class HelixParameters():
 
     
     def to_lmfit_parameters(self, round_num=None):
-        """Tells Parametric Protein what parameters to fit and the order if rounds exist"""
+        """Tells Parametric Protein what parameters to fit."""
         
        #Straight helix guess
         params = Parameters()
@@ -307,14 +308,6 @@ class HelixParameters():
         }
         
         return d
-    
-    def copy(self):
-        """Broke this need to fix"""
-        return HelixParameters(omega1=self.omega1(), phi1=self.phi1(),helix_length=self.length(), 
-                               translate_x=self.translate_x(), translate_y=self.translate_y(), 
-                               translate_z=self.translate_z(), rotate_phi=self.rotate_phi(), 
-                               rotate_theta=self.rotate_theta(), rotate_psi=self.rotate_psi(), 
-                               rmsd=self.rmsd())
     
     def convert_to_endpoints(self):
         """Calculates Helical Endpoints Based on Helical Parameters"""
@@ -399,7 +392,7 @@ class HelixParameters():
     
     
     def export_helix(self,labels=False,decPoint = 2):
-        """Returns parameters comma seperated: Mostly for Helical Protein"""
+        """Returns parameters comma seperated values: Mostly for Helical Protein Obj"""
         outString = ""
         label = ""
         #Dictionary of parameters
@@ -466,7 +459,7 @@ class ParametricHelix():
     #----------MAKE CARTESIAN COORDINATES FOR CA OF RESIDUE t---------------
     
     def straightHelix_Cartesian(self,t):
-        #equaiton to generates a straight helix
+        #equation to generates a straight helix
         d = self.helix_parameters.d() # helical rise per residue (fixed)1.51ang
         r1 = self.helix_parameters.r1() #helical radius (fixed) 2.26ang
         omega1 = self.helix_parameters.omega1() # helical twist (fixed) 100deg
@@ -506,6 +499,7 @@ class ParametricHelix():
 
 
     def Ca_coords_from_stored_params(self,residue_indices=None):
+        """Calpha coordinates from stored parameter"""
         
         move = self.moving(residue_indices)
             

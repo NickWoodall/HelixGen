@@ -30,3 +30,11 @@ log/*
 loop_struct.txt
 *FullSet*
 refData_scaler.gz
+Buttress_Simple.ipynb
+Exclude_Certain_Clusters.ipynb
+Figures.ipynb
+LE_many_helix_rewrite.ipynb
+MDS_replace.ipynb
+Midpoint_Buttress_Redo.ipynb
+Tetrahedron_Volume_Corr.ipynb
+Untitled.ipynb

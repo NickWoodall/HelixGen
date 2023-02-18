@@ -1,7 +1,6 @@
 import tensorflow as tf
 import os
 import sys
-#clean up these imports for unused later
 from math import cos,sin,tan,asin,acos,radians,sqrt,degrees,atan,atan2,copysign
 import numpy as np
 
@@ -34,8 +33,6 @@ from pymol import cmd, stored, selector
 import GenerateEndpoints as ge
 import HelixFit as hf
 import FitTransform as ft
-
-import seaborn as sns
 import util.RotationMethods as rm
     
     
@@ -44,6 +41,7 @@ tf.config.run_functions_eagerly(True)
 
 
 #load distance maps and endpoints dataset for initializing start
+#from reference
 def load_distance_map(name, dm_file='data/Fits_4H_dm_phi.npz'):
     rr = np.load(dm_file, allow_pickle=True)
     X_train, y_train , featNames = [rr[f] for f in rr.files]
@@ -52,6 +50,7 @@ def load_distance_map(name, dm_file='data/Fits_4H_dm_phi.npz'):
     return X_train[y_train==name][:,:-4]
 
 def index_helix_ep(ep_in,helices_desired=[0,1],num_helices=4):
+    """index helices from list of helical endpoints"""
     
     num_ep = num_helices*2
     hi = np.array(helices_desired,dtype=int)
@@ -64,6 +63,7 @@ def index_helix_ep(ep_in,helices_desired=[0,1],num_helices=4):
     return ep_in[np.ix_(np.array(range(ep_in.shape[0])),h_ep[hi].flatten(), np.array(range(ep_in.shape[2])))]
     
 def get_midpoint(ep_in,helices_desired=[0,1],num_helices=4):
+    """Get midpoints of input endpoints, 2 points per helix"""
     
     num_ep = num_helices*2
     
@@ -96,6 +96,7 @@ def get_stubs_from_points(ep_in,index=[0,1,2]):
     return stub
 
 def xform_npose_2batch(xform, npose):
+    """extra batched matrix mult"""
     #single batch code  util.npose_util as xform_npose
     return np.matmul(np.repeat(xform[:,np.newaxis,...],npose.shape[1],axis=1),npose[...,None]).squeeze(-1)
 
@@ -163,7 +164,7 @@ def helix_dindex(helices_to_keep, num_helices=4, intraHelixDist=True):
         new_ind = np.intersect1d(mat_ind[h_ep[x[0]]], mat_ind.T[h_ep[x[1]]])
         tot_ind.extend(new_ind)
     
-    #convert to generator indices (indices of iu1 array)
+    #convert to generator indices (indices of iu1 array) upper diagonal
     out_ind = []
     for x in tot_ind:
         if len(np.nonzero(mat_ind[iu1]==x)[0])>0:
@@ -173,19 +174,23 @@ def helix_dindex(helices_to_keep, num_helices=4, intraHelixDist=True):
 
 
 def point_dindex(target_points, ref=[4], num_helices = 4):
+    """index part of distance map based on defined indices"""
     
+    #prep indices for distance map
     num_ep = num_helices*2
     mat_ind = np.array(range((num_ep)**2)).reshape((num_ep,num_ep))
     iu1 = np.triu_indices(num_ep, 1)
     
     dindex = []
     
+    #get indices
     for tp in target_points:
         for ref_ind in ref:
             dindex.append(mat_ind[ref_ind,tp]) #indices for distances to target point
     
     dindex = np.array(dindex)
     
+    #convert to upper diagonal indices
     out_ind = []
     for x in dindex.flatten():
         out_ind.append(np.nonzero(mat_ind[iu1]==x))
@@ -201,13 +206,9 @@ def target_dindex(target_points, oneRef = True, num_helices = 5, baseTri_out=Tru
     mat_ind = np.array(range((num_ep)**2)).reshape((num_ep,num_ep))
     iu1 = np.triu_indices(num_ep, 1)
 
-    if oneRef:
-        ref = [1,2,3]
-        base_tri = [mat_ind[1][2],mat_ind[2][3],mat_ind[1][3]] #p1 to p2, p2 to p3, p1 to p3
-        
-    else:
-        ref = [0,1,2]
-        base_tri = [mat_ind[0][1],mat_ind[1][2],mat_ind[0][3]] #p0 to p1, p1 to p2, p0 to p3
+    #oneRef always true now
+    ref = [1,2,3]
+    base_tri = [mat_ind[1][2],mat_ind[2][3],mat_ind[1][3]] #p1 to p2, p2 to p3, p1 to p3
     
     dindex = []
     
@@ -218,13 +219,14 @@ def target_dindex(target_points, oneRef = True, num_helices = 5, baseTri_out=Tru
     
     out_ind = []
     for x in dindex.flatten():
-        out_ind.append(np.nonzero(mat_ind[iu1]==x))
+        out_ind.append(np.nonzero(mat_ind[iu1]==x)) #convert to upper triangular indeices
         
     out_ind = np.array(out_ind)
     
     return out_ind.reshape((-1,len(base_tri))),base_tri
 
 def minMax_indices(distance_index, point_index, minmax_obj):
+    """Assemble indices to convert distances to realspace minMax"""
     
     #assemble conversions 
     #converts output from generator back to real distances
@@ -244,6 +246,7 @@ def minMax_indices(distance_index, point_index, minmax_obj):
     return dMin, mScale, mMin, dMin_nwp,  mScale_nwp 
 
 def ref_distmap_index(distances, num_helices = 4):
+    """Pull upper triangular from distance matrix."""
     
     num_ep = num_helices*2
     mat_ind = np.array(range((num_ep)**2)).reshape((num_ep,num_ep))
@@ -254,8 +257,7 @@ def ref_distmap_index(distances, num_helices = 4):
 
 def convert_dMat_to_iu1_index(indices_in, num_helices = 4):
     """Converts indices on flattened distance index to iu1 single indices"""
-    
-    
+
     conv_array = np.array(indices_in).flatten()
     
     num_ep = num_helices*2
@@ -273,15 +275,8 @@ def convert_dMat_to_iu1_index(indices_in, num_helices = 4):
     return out_ind.reshape(conv_array.shape)
 
 
-# In[5]:
-
-
 def prep_base_triangle_trilateriation(dindex, base_tri, distance_map):
     """Return x,y,z coords on z-plane of base triangle of tetrahedron from a distance map."""
-    
-#     dindex, base_tri = target_dindex(targ_dind, oneRef = oneRef, num_helices = num_helices)
-# #     print(dindex)
-# #     print(base_tri)
     
     #test case input data: prep base triangles for trilateration at zplane, (0,0,0) (dvar,0,0) (ivar,jvar,0)
     desired_dm = distance_map[:, base_tri] #base tri from dindex
@@ -319,7 +314,7 @@ def prep_base_triangle_trilateriation(dindex, base_tri, distance_map):
     return dvar, ivar, jvar
 
 
-#functions for back propagation
+#--------------------functions for back propagation--------------------------------------
 
 
 @tf.function 
@@ -438,12 +433,10 @@ def midpoints_loss(g1, target,
     return tf.square(tf.subtract(midpoint,target)) # means squared loss to desired midpoint
 
 
-# In[23]:
-
-
 def fullBUTT_GPU(gen_obj, ref_map, target_mp_in, batch_size=32,cycles=100, input_z=None, 
                           rate=0.05, target_ep=[4,5,6,7], num_helices=4, oneRef=True,
                           scale=5.0, z_size=12, print_loss=False):
+    """Buttress input helices (ref_map) towards target midpoints using generator (gen_obj) and input reference map"""
     
     batch_indices = np.repeat(np.array(range(ref_map.shape[0])),batch_size)
     batch = batch_indices.shape[0]
@@ -535,66 +528,10 @@ def fullBUTT_GPU(gen_obj, ref_map, target_mp_in, batch_size=32,cycles=100, input
     
     return z, loss_mask, loss_mp, batch_indices
     
-#give backpropagated generator output, find the best outputs based on loss
-def buttress_ep_from_z(gen_obj, gen_z, starting_ep , loss_midpoint, loss_masked, batchIndices,
-                       max_loss_mp = 0.001, max_loss_mask = 0.001):
-    
-    
-    best_mp = np.sum(loss_midpoint<max_loss_mp,axis=1)>2 # 3 total mp loss outputs (x,y,z of midpoint to target)
-    best_mask = np.sum(loss_masked<max_loss_mask,axis=1)>27 # 28 total mask loss point (2 helices)
-
-    mask_mp_bool = np.logical_and(best_mp, best_mask)       
-
-    identified_z = gen_z[mask_mp_bool]
-    print(f'Outputs passing filters: {len(identified_z)}')
-    print(f'Total Outputs: {len(gen_z)}')
-    uInd = batchIndices[mask_mp_bool]
-    
-    orig_ep = starting_ep[uInd]
-    
-    
-    gen_obj.generate(z=12, input_z = identified_z, batch_size=identified_z.shape[0])
-    gen_obj.MDS_reconstruct_()
-    
-    out_ep = np.array(gen_obj.reconsMDS_)
-    
-    return align_generated_to_starting_ep(out_ep, orig_ep)
-
-def buttress_ep_from_z_mask_only(gen_obj, gen_z,loss_masked, batchIndices,
-                                 max_loss_mask = 0.002, max_out=100, print_stats= False):
-    
-    
-    sm = np.sum(loss_masked,axis=1)
-    smi = np.argsort(sm)
-    sm_sort = sm[smi]
-    best_mask = sm_sort < max_loss_mask
-    
-    ind2 = np.array(range(len(sm)))
-    #uInd = batchIndices[smi][best_mask]
-    uiInd = ind2[smi][best_mask]
-    uInd = batchIndices[uiInd]
-    
-    if print_stats:
-        print('Input Size: ',      len(sm))
-        print('Passing Filters: ', len(uInd))
-    
-    
-    if len(uInd)>max_out:
-        uInd = uInd[:max_out]
-        uiInd = uiInd[:max_out]
-    
-    identified_z = gen_z[uiInd]
-    
-    gen_obj.generate(z=12, input_z = identified_z, batch_size=identified_z.shape[0])
-    gen_obj.MDS_reconstruct_()
-    
-    out_ep = np.array(gen_obj.reconsMDS_)
-    
-    return out_ep, uInd
 
 def mask_mp_filterBatch(gen_obj, gen_z, loss_masked, loss_mp_ed, batchIndices, max_mp_loss = 1e-3,
                      max_loss_mask = 0.002, max_out=200, print_stats= False):
-    """Applies filter to backprop. Priotizes maximum batch diversity"""
+    """Applies filter to backprop loss. Priotizes maximum batch diversity"""
     
     totalIndices = np.arange(len(batchIndices.flatten()))
     #boolean arrays
@@ -691,25 +628,6 @@ def align_generated_to_starting_ep(gen_ep, orig_ep, target_mp=None):
         return final_ep_full, final_ep_full_reflect, final_target_midpoint
     else:
         return final_ep_full, final_ep_full_reflect
-
-def guess_reflection(p, p_reflect, des_mp, invert=False):
-    p_mp = get_midpoint(p, helices_desired=[2,3], num_helices=4)
-    p_reflect_mp = get_midpoint(p_reflect, helices_desired=[2,3], num_helices=4)
-    
-    final_ep = np.zeros_like(p)
-
-    measure1 = np.linalg.norm(p_mp - des_mp,axis=1)
-    measure2 =  np.linalg.norm(p_reflect_mp - des_mp,axis=1)
-
-    if not invert:
-        final_ep[np.nonzero((measure1<measure2))] = p[np.nonzero((measure1<measure2))]
-        final_ep[np.nonzero((measure1>measure2))] = p_reflect[np.nonzero((measure1>measure2))]
-    else:
-        final_ep[np.nonzero((measure1>measure2))] = p[np.nonzero((measure1>measure2))]
-        final_ep[np.nonzero((measure1<measure2))] = p_reflect[np.nonzero((measure1<measure2))]
-        
-    
-    return final_ep
 
 def determine_reflection(input_points, input_points_reflect, reference_targets):
     
@@ -823,7 +741,9 @@ def vp(ep_in, guide_in,  name='test', max_out=10):
 # Z = XYZ[:,2];
 
 def build_protein_on_guide_clash(start_helices, guide_points, batch=200, 
-                           next_mp_dist = 9, mp_deviation_limit = 5, maxOut=1000, maxClash_num = 3):
+                           next_mp_dist = 9, mp_deviation_limit = 5, maxOut=1000, maxClash_num = 3, verbose=True):
+    
+    "Assembles helical protein on input guide points"""
     
     clash_thresh = 2.85
     loopCount = 0
@@ -831,7 +751,7 @@ def build_protein_on_guide_clash(start_helices, guide_points, batch=200,
     #this orientation promotes most likely growth to [0,0,1] (see distribution of reference set)
     sh_xy = align_points_to_XYplane(start_helices, keep_orig_trans=False)
     ci = np.zeros(start_helices.shape[0],dtype=np.int32)
-    master_ep = sh_xy[:,:4,...]# if there are more than 4ep (2 helices) just take the first two
+    master_ep = sh_xy[:, :4, ...]# if there are more than 4ep (2 helices) just take the first two
     
     roomToGrow = True
     output_ep_list = []
@@ -856,12 +776,12 @@ def build_protein_on_guide_clash(start_helices, guide_points, batch=200,
 
         dmp = np.linalg.norm(vg - np.expand_dims(mp_start,axis=1),axis=2)
         am = np.argmin(np.abs(dmp - next_mp_dist),axis=1)
-        print('max next indices',max(am))
+        if verbose:
+            print('max next indices of guide line',max(am))
         
         tmp = vg[np.ix_(np.array(range(vg.shape[0])), am, np.array(range(3)))][0]
 
         cqpz_dmp = np.concatenate((current_quad_prez, np.expand_dims(tmp,axis=1)), axis=1)
-        print(current_quad_prez.shape)
 
         #rotate points and desired midpoint into trilaterization place
         current_quad_tmp = rotate_base_tri_Zplane(cqpz_dmp,  target_point=8, index_mobile=[1,2,3])
@@ -875,34 +795,32 @@ def build_protein_on_guide_clash(start_helices, guide_points, batch=200,
 
         #indices for reference map
         ref_map_base = ref_distmap_index(dist, num_helices=4)
-
-        #GPU ##33s  with 500,000 samples with 200 cycles (average of 7 runs)
-        #CPU ##39s
-        #maybe there is something I can do to make this more effecient, not pipeline bottleneck so okay
-        #for small models like this tensor flow says gpu may not be more effecient
         
         start_loss = time.time()
-
-        print(f'Input Size: {ref_map_base.shape[0]*batch}')
         
+        if verbose:
+            print(f'Input Size: {ref_map_base.shape[0]*batch}')
+            
         output_z, loss_mask, loss_mp, batchInd = fullBUTT_GPU(gen_obj, ref_map_base , target_midpoint, 
                                                             batch_size=batch, cycles=200, input_z=None, 
                                                             rate=0.05, target_ep=[4,5,6,7], num_helices=4, 
                                                             oneRef=True, scale=100.0, z_size=12)
         
         end_loss = time.time()
-        print('backprop time : ',end_loss-start_loss)
+        if verbose:
+            print('backprop time : ',end_loss-start_loss)
 
         out_ep, uInd = mask_mp_filterBatch(gen_obj, output_z[-1], loss_mask[-1], loss_mp[-1], 
                                                   batchInd, max_mp_loss = 1e-3, max_loss_mask = 0.002, 
                                                   max_out=maxOut, print_stats= True)
-        
-        print(f'Passing Filters: {out_ep.shape[0]} ')
+        if verbose:
+            print(f'Passing Filters: {out_ep.shape[0]} ')
         end_mds = time.time()
-        print('MDS time: ',end_mds-end_loss)
+        if verbose:
+            print('MDS time: ',end_mds-end_loss)
         
         if len(uInd) < 1:
-            print(f'Failed at helices length {len(master_ep)/2}')
+            print(f'Failed on viable outputs')
             return output_ep_list
 
         fa, fa_reflect = align_generated_to_starting_ep(out_ep, current_quad_prez[uInd])
@@ -917,8 +835,9 @@ def build_protein_on_guide_clash(start_helices, guide_points, batch=200,
         final = final_dr[mpfdb]
         
         #remove steric clashes
-        build_epr = ge.EP_Recon(master_ep[uInd,:,:][mpfdb][:,-6:,:]) #pretty this need to be even slice,okay to be full too
-        #build_epr = ge.EP_Recon(master_ep[uInd,:,:][mpfdb][:,:,:])
+        #put in helix for clashing testing
+        build_epr = ge.EP_Recon(master_ep[uInd,:,:][mpfdb][:,-6:,:]) # this need to be even slice, two ep per helix
+
         
         start_clash = time.time()
             
@@ -933,11 +852,13 @@ def build_protein_on_guide_clash(start_helices, guide_points, batch=200,
         remClash = cc<maxClash_num
         
         end_clash = time.time()
-        print('clash time: ', end_clash-start_clash)
+        if verbose:
+            print('clash time: ', end_clash-start_clash)
         
         
         master_ep = np.concatenate((master_ep[uInd,:,:][mpfdb][remClash], final[:,4:,:][remClash]), axis=1)
-        print(f'final pass filter' ,master_ep.shape[0])
+        if verbose:
+            print(f'final pass filter' ,master_ep.shape[0])
         if master_ep.shape[0]<2:
             break
 
@@ -990,8 +911,8 @@ def build_protein_on_guide_clash(start_helices, guide_points, batch=200,
 #distance map of ep dataset
 #unsqueeze at two different dimensionsq to broadcast into matrix MX1 by 1XN to MXN 
 
-def get_reference_input(batch=1000):
-    rr = np.load(f'data/ep_for_X.npz', allow_pickle=True)
+def get_reference_input(fn =f'data/ep_for_X.npz', batch=1000):
+    rr = np.load(fn, allow_pickle=True)
     X = [rr[f] for f in rr.files][0]
 
     dX = np.expand_dims(X,axis=1) - np.expand_dims(X,axis=2)
@@ -1013,7 +934,59 @@ def get_reference_input(batch=1000):
     
     return start_hel
 
-#ahhh recode this without the global nonsense at some point
+#generate guide points
+
+def generate_parabola(start, stop, h=[20,20,20], k=[20,30,40], num_points = 100):
+    #create a set of parabolas past through ([0,0]) start of helices to vertex ([[10,20],[10,30],[10,40]])
+    # (x-h)^2 = -4(a)(y-k)
+    # Solve for 'a' at x=0, y=0
+    # (0-h)^2 = -4(a)(0-k)
+    #      a  =  h^2/4k
+    h = np.array(h).reshape((-1,1))
+    k = np.array(k).reshape((-1,1))
+    a = np.square(h)/(4*k)
+    
+    #trace x from 0 to 10
+    # -4ay +4ak = (x-h)^2
+    # -4ay = (x-h)^2 - 4ak
+    #    y = ( (x-h)^2 - 4ak  ) / (-4a)
+    #    y = (4ak - (x-h)^2)
+    x = np.repeat(np.expand_dims(np.linspace(start,stop,num=100), axis=0), h.shape[0],axis=0)
+    z = np.divide(4*a*k -np.square(x-h), (4*a))
+   
+    x=np.expand_dims(x,axis=2)
+    z=np.expand_dims(z,axis=2)
+    y = np.zeros_like(x)
+    gen_para =  np.concatenate((x,y,z),axis = 2)
+    
+    return gen_para
+    
+#rotate parabola around the x axis
+# angleDeg = 90
+# gpi = 1
+# xfr=nu.xform_from_axis_angle_deg([1,0,0],angleDeg)
+# gp = np.hstack((g_para[gpi],np.ones_like(g_para[gpi,:,gpi].reshape((-1,1)))  ))
+# gp_z=nu.xform_npose(xfr,gp)[:,:3]
+# gp_z.shape
+
+def generate_pos_circle(start, stop, h=30, k=0, r=30, num_points= 100):
+    """Generate guide points originating a the origin for a circle, positive values only. """
+    #(x-h)^2 + (y-k)^2 = r^(2)
+    # y = sqrt(r^2-(x-h^2))+k
+    x = np.linspace(start,stop,num=num_points)
+    z = np.sqrt(np.square(r)-np.square(x-h))+k
+    y = np.zeros_like(x)
+    return np.concatenate((x.reshape((-1,1)),y.reshape((-1,1)),z.reshape((-1,1))),axis=1)
+
+def add_xline(inputP, line_length, num=60):
+    line = np.zeros((num,3))
+    line[:,0] = np.linspace(0, line_length, num=num)
+    cline = inputP[-1]+line
+    ci_line = np.concatenate((inputP,cline),axis=0)
+    
+    return ci_line
+
+#global 
 if tf.config.list_physical_devices('GPU'):
     device_name = tf.test.gpu_device_name()
 else:
@@ -1022,7 +995,7 @@ rate=0.05
 # if ~devtype.__eq__(device_name):
 #just do cpu
 # device_name = 'CPU'
-print(f'device name {device_name}')
+print(f'This will be run on the device: {device_name}')
 
 gen="data/BestGenerator"
 
@@ -1034,8 +1007,45 @@ with tf.device(device_name):
 output1=gen_obj.generate(z=12,batch_size=12) #example generator
 
 
+circ_gp = generate_pos_circle(0,30,h=30,k=0,r=30, num_points= 100)
+ci_line = add_xline(circ_gp[:-1], 10, num=30)
 
 
+if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser(description="Guided Assembly of a Helical Protein on an input Guide.")
+
+    parser.add_argument("-i","--input_endpoint", help="Input",
+                       default=f'data/ep_for_X.npz')
+    parser.add_argument("-g","--guide points", help="Input",
+                       default=f'data/ep_for_X.npz')
+    parser.add_argument("-m","--mds_max", help="mds conversion maximum",
+                       default=2000, type=int)
+    parser.add_argument("-b","--batch", help="Batch Size",
+                       default=200, type=int)
+    parser.add_argument("-n","--num_ref_in", help="How many inputs to sample from the reference set from default -i",
+                       default=2000, type=int)
+    parser.add_argument("-o","--out_direc", help="directory to output straight helix pdbs",default="output/")
+    parser.add_argument("-v", "--verbose_off", help="turn off internal messages", action="store_true")
+    parser.add_argument("--limit", help="limit output", default=100, type=int)
+    
+    args = parser.parse_args()
+    
+    start_hel = get_reference_input(fn=args.input_endpoint, batch=args.num_ref_in)
+    
+    verbose = ~args.verbose_off
+    
+    out_ep = build_protein_on_guide_clash(start_hel, ci_line, batch=args.batch, 
+                                          next_mp_dist=10, mp_deviation_limit = 5, maxOut=args.mds_max,
+                                          maxClash_num=3,verbose=verbose)
+    
+    sumL = 0
+    for i,x in enumerate(out_ep):
+        sumL += len(x)
+        print(f'Outputs {len(x)}: num_helices: {x.shape[1]/2}')
+    print('total',sumL)
+    
+    for i,x in enumerate(out_ep):
+        vp(out_ep[i], ci_line, name=f'out_{i}_', max_out=args.limit)
 
 

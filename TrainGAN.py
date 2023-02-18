@@ -32,8 +32,10 @@ def prepData(name,perData=100):
     rr = np.load(f'{name}', allow_pickle=True)
     X_train, y_train, featnames = [rr[f] for f in rr.files]
 
-    #remove phi1
+    #remove phi1, helical pahse from fit
     X_train = X_train[:,:-4]
+    
+    #remove some percent of the data
     if perData < 100:
         newSize = int(perData/100*len(X_train))
 
@@ -121,6 +123,7 @@ def init_model(X_train, y_train, batch=64 ,zIn=12, g_layers=3, g_size=64, d_laye
     
 
 def percentRun(trainSettings, percentUsed = 100,feature_name='data/endpoint_distancemap_phi',saveLoss=True,nameOut=None):
+    """Train GAN"""
     X_train, y_train, mm = prepData(feature_name,perData=percentUsed)
     print(f'X_train shape: {X_train.shape}')
     

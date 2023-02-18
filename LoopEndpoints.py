@@ -89,9 +89,8 @@ def create_kdTree(features):
     return binTreePhi, binTreePhiS
 
 
-# In[3]:
 
-
+#reference straight helix 
 zero_ih = nu.npose_from_file('util/zero_ih.pdb')
 tt = zero_ih.reshape(int(len(zero_ih)/5),5,4)
 stub = tt[7:10].reshape(15,4)
@@ -322,6 +321,7 @@ def hfit_loop_proteins(csvFile = 'data/loopFits_new.csv',dataDirec='data/bCov_4H
             print(f'{i} fits done')
             
 def convertFitstoNumpy(csvFile = 'data/loopFits.csv'):
+    """Takes in csv of loops fits and convert to numpy array"""
     dfRead = pd.read_csv(csvFile)
     df1 = ft.prepData_Str(dfRead,rmsd_filter=100)
     df2 = ft.EndPoint(df1,num_helices=2)
@@ -371,6 +371,7 @@ def convertFitstoNumpy(csvFile = 'data/loopFits.csv'):
 
 
 def angle_two_vectors(v1,v2):
+    """Return angle between two vectors"""
         #assuming normalize
         #https://onlinemschool.com/math/library/vector/angl/
 
@@ -381,8 +382,7 @@ def angle_two_vectors(v1,v2):
         return  acos(dp)
 
 def return_aligned(ep,hnum=0):
-    
-    #align first helix to the z-axis
+    """align first helix to the z-axis"""
     
     #p1 = hstart, p2=hend, p3=nextHstart, p4= nextHend
     
@@ -525,6 +525,7 @@ def normalize(v):
 
 
 def random_reduce(arrayList, num_to_keep = 20):
+    """Randomly remove parts to desired size."""
     
     if num_to_keep > arrayList.shape[0]:
         num_to_keep =  arrayList.shape[0]
@@ -535,12 +536,8 @@ def random_reduce(arrayList, num_to_keep = 20):
     
     
 
-
-# In[6]:
-
-
 def first_helix(end_points,length_mod=1):
-    
+    """"Add first helix in looping protocol"""
     #generic helical AA to extend from
     build = stub.copy()
     
@@ -579,11 +576,8 @@ def first_helix(end_points,length_mod=1):
     
     
 
-
-# In[7]:
-
-
 def first_loop(buildList, indexList, epGuide, neighbors=5, phiQueryNum=10, randMult=0,distCut=6):
+    """Append first loop to first helix in looping protocol"""
     
     axisRot = np.array([0,0,-1,1]) 
     
@@ -694,14 +688,9 @@ def first_loop(buildList, indexList, epGuide, neighbors=5, phiQueryNum=10, randM
     return bL, iL, epGuide, epTrue, phiList, feat_True, xform_True
 
         
-    
-
-
-# In[8]:
-
-
 def second_helix(buildList, indexList, epGuide, epTrue, phiList, hnum, prev_loopFeature, prev_loopTrans, length_mod=1, distCut=6):
-
+    """Second Helix onto First loop from looping protocol."""
+    
     size = epGuide.shape[-2] #to determine when the terminal helices occurs
     ind_hnum = hnum*2 # first helix, hnum 0, [0,1] indices for endpoints
 
@@ -786,17 +775,11 @@ def second_helix(buildList, indexList, epGuide, epTrue, phiList, hnum, prev_loop
     return buildList2, indexList, epGuide, epTrue, phiList
     
     
-    
 
-
-# In[9]:
-
-
-#seems good up to second helix
-#check
 
 def next_loop_helix(buildList, indexList, epGuide, epTrue, phiList, hnum, 
                     neighbors=5, phiQueryNum=10, randMult=10, distCut=6, length_mod=1):
+    """After second helix, can interatively add loop then helix."""
     
     ind_hnum = hnum*2
     
@@ -1081,8 +1064,19 @@ def add_loops(end_points, neighbors=10, length_mod=1, dist_cut=6, phiQueryNum=10
     
     
 
-def add_loops_cycle(endpoints_in, numCycles=5, neighInc=5, lmodInc=1,phiQueryNum=10, randMult=0,
+def add_loops_cycle(endpoints_in, neighInc=5, lmodInc=1,phiQueryNum=10, randMult=0,
                     neighStart = 5, lengthStart=0, dist_cut=6,maxPhi_cut=200,  outDirec='output/', analysisOnly=True,printStats=True):
+    """Iteratively try increasing loop parameters. Prevents slow running from combinatorial explosion of possibilities."""
+    
+    #neighbors = number of nearest loop neighbors to pull from kd tree
+    #lmod = length modification of helices to try
+    #phiQuery num = what number of divisions of helical phase phi angle (360) to query from 
+    #dist_cut = how far the true endpoints of the build can vary from the guide
+    #maxPhi_cut = reduce outputs at each step from all passing filters to prevent combinatorial explosion
+    #analysis only = do not write structure out
+    #print stats = show progress of looping through each step
+    
+    
     
     start = time.time()
     total_structures = 0
@@ -1226,7 +1220,13 @@ def bb_loop(name,batch=32,z=12,loopTry=True,print_output=True,analysisOnly=False
     print(f'Time Per Phi Bins Struct: {(end-start)/tot:.2f}s')
         
         
-        
+#neighbors = number of nearest loop neighbors to pull from kd tree
+#lmod = length modification of helices to try
+#phiQuery num = what number of divisions of helical phase phi angle (360) to query from 
+#dist_cut = how far the true endpoints of the build can vary from the guide
+#maxPhi_cut = reduce outputs at each step from all passing filters to prevent combinatorial explosion
+#analysis only = do not write structure out
+#print stats = show progress of looping through each step    
         
 
 if __name__ == "__main__":

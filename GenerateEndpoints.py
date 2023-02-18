@@ -30,6 +30,7 @@ import argparse
 import HelixFit as hf
 import FitTransform as ft
 
+#reference straight helix, global
 zero_ih = nu.npose_from_file('util/zero_ih.pdb')
 tt = zero_ih.reshape(int(len(zero_ih)/5),5,4)
 stub = tt[7:10].reshape(15,4)
@@ -40,6 +41,7 @@ stub = tt[7:10].reshape(15,4)
 ###-------Generate Endpoints
 
 class BatchRecon():
+    """Generates distance map and reconstructs using sklearn MDS to endpoints maps. Place helices inbetween endpoints (npose)."""
     
     def __init__(self, name, size=8, h4_feats=28, z_size = 12):
         """Load generator to make endpoints. Make sure MinMaxScaler is in the same directory with _mm added to end."""
@@ -316,6 +318,7 @@ def generate_straight_helices(genName='data/BestGenerator',outName='gen_ep.pdb',
     nu.dump_npdb(br.npose_list,outName)
     
 def generate_dist_dihe(genName='data/BestGenerator',outName='gen_ep',batch_size=32,z=12):
+    """Generate midpoints distance and dihedrals for clustering."""
     br = BatchRecon(name=genName)
     br.generate(z,batch_size=batch_size)
     br.MDS_reconstruct_()
