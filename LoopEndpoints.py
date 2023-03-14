@@ -5,7 +5,6 @@ from math import cos,sin,tan,asin,acos,radians,sqrt,degrees,atan,atan2,copysign
 import numpy as np
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 import pickle
 import scipy

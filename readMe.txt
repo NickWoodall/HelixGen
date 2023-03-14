@@ -1,4 +1,5 @@
 *Deal with advice for environment creation, of fa_tfpy, specNetGPU, and TorchGraph
+
 *check restricted google drive downloads
 
 
@@ -23,22 +24,60 @@ There are 3 modules here.
 		d3. The reference clusters must be remade from Clustering/data/csv_saves/Remake_Cluster_Scaler.py
 			to maintain produce train/test split
 
------Required Datasets for looping endpoints:
+
+
+------------------------Primary Environment for Helix Fitting, GAN, Looping GAN Outputs---------------------------
+#compatibility issues with starting pymol and tensorflow, pymol is used to read pdbs
+#recommended install for env that can run all files in this directory without 
+
+	conda create --name hgen python=3.8
+	conda install -c conda-forge cudatoolkit=10.1.243 cudnn=7.6.5
+	conda install -c anaconda tensorflow-gpu==2.3.0
+	
+	conda install -c schrodinger pymol=2.4
+	conda install shapely --channel conda-forge
+	conda install scikit-learn=0.23.2
+	conda install pandas
+	conda install numba
+	conda install matplotlib
+
+	pip install lmfit
+	pip install localization
+
+-----------------------------------------Data sets available for retraining, Loop Structures required for Looping Endpoints-------------------
+
+-for looping endpoints:
 
 download loop structures into data/ from [https://drive.google.com/file/d/16GuyJPYWOEW0Ud-sPrklGuFuuKwk6sjO/view?usp=sharing]
 
-------Required Datasets for Retraining the GAN from scratch. Can use Fits_4H.csv:
+-Retraining the GAN from scratch. Can use provided Fits_4H.csv and skip
 
-4 helix reference models into data/4H_dataset/ from [https://drive.google.com/drive/folders/1p8PgjTZsJ6Di8gbvVLx3lhUsygurGEYN?usp=sharing] #restricted
+4 helix reference models into data/4H_dataset/models from [https://drive.google.com/drive/folders/1p8PgjTZsJ6Di8gbvVLx3lhUsygurGEYN?usp=sharing] #restricted
 
-------Datasets for Retraining GraphGen_4H
+-for Retraining GraphGen_4H
 
 4 helix reference models into data/4H_dataset/ from [https://drive.google.com/drive/folders/1p8PgjTZsJ6Di8gbvVLx3lhUsygurGEYN?usp=sharing] #restricted
 4 helix straight models into data/4H_dataset/ from [https://drive.google.com/drive/folders/1D7IA2jr1dIJFqSlbz30TDCbmJ229Myqc?usp=sharing] #restricted, can be remade from reference
 
+-------------------------Retraining Network From Scratch--------------------------------
+
+#Fitting the dataset, you may skip this step and use the Fits_4H.csv provided
+#A few warnings especially at the beginning are exptected, will take a few hours
+python HelixFit.py data/4H_dataset/models data/Fits_4H_new
+
+#convert fitted parameters to distance map and phi values of helical endpoints, -TESTED
+#prints shape of saved numpy array
+python FitTransform.py data/Fits_4H.csv data/Fits_4H_dm_phi -d
+
+#train GAN and save the loss plots  -TESTED
+python TrainGAN.py data/Fits_4H_dm_phi.npz -o FullSet -s
+
 
 -----------------------Workflow for generating and designing 4 helix bundles-------------------
-#Generate and loop 8 generated 4h topologies
+#remakes csv object loop data without re-fitting the loops, use -r to redo the loop fits  -TESTED
+python util_LoopCreation.py -j 
+
+#Generate and loop 8 generated 4h topologies, you must have downloaded loop_struct.txt and recreated objects with python util_LoopCreation.py -j 
 python LoopEndpoints.py -b 8
 
 #in GraphGen Directory, predict sequence and relax looped structures from above, need to switch to pytorch/Rosetta environment
@@ -47,16 +86,9 @@ python Predict_Design.py -i  ../output -n test1
 ##!!--Pyrosetta has been muted via its init method in a lot of places which may not give error messages in the case of 
 --------------------------------Training the GAN-------------------------------------
 
-#Fitting the dataset, you may skip this step and use the Fits_4H.csv provided
-# a few proteins in the dataset don't fit the minimum length requirements and will fail generating a warning, will take a few hours
-python HelixFit.py data/4H_dataset/models data/Fits_4H_new
 
-#convert fitted parameters to distance map and phi values of helical endpoints
-#prints shape of saved numpy array
-python FitTransform.py data/Fits_4H.csv data/Fits_4H_dm_phi -d
 
-#train GAN and save the loss plots
-python TrainGAN.py data/Fits_4H_dm_phi.npz -o FullSet -s
+
 
 #copy the trained GAN and the min max scaler to the data folder for convenience
 
@@ -67,8 +99,7 @@ python util/plot.py -i log/GAN_FullSet/loss/loss_FullSet.pkl -o log/GAN_FullSet/
 #Upping the epochs to 1000 for 278 examples.
 python TrainGAN.py data/Fits_4H_dm_phi.npz -o OnePer -s -p 1 -e 1000
 
-#remakes csv object loop data without re-fitting the loops, use -r to redo the loop fits
-python util_LoopCreation.py -j 
+
 
 #produce generated loop structures from generator, use -a to not output the .pdb files and just get stats
 python LoopEndpoints.py -i data/FullSet -a

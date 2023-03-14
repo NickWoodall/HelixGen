@@ -1,7 +1,5 @@
-import pandas as pd
 import tensorflow as tf
 import numpy as np
-import matplotlib.pyplot as plt
 import itertools
 
 import os
@@ -17,14 +15,14 @@ import joblib
 import argparse
 import textwrap
 
-import util.plot as pt
 
 if tf.config.list_physical_devices('GPU'):
     device_name = tf.test.gpu_device_name()
+    print(f'Device GPU availabe: {device_name}')
 else:
-    device_name = '\CPU:0'
-    
-print(f'device name {device_name}')
+    device_name = 'cpu'
+    print(f'Only CPU Device available: {device_name}')
+
 
 def prepData(name,perData=100):
     #prepare transformed Helix Fit Parameters for GAN from FitTransform
@@ -274,10 +272,18 @@ if __name__ == "__main__":
     parser.add_argument("-s","--save_loss", help="Save Generator and Discrimanator Losses For Plotting", action="store_true")
     parser.add_argument("-p","--percent", help="train on a random subset of data. Enter percent desired.", default = 100, type=int)
     parser.add_argument("-e","--epochs", help="number of epochs to train", default = 300, type=int)
+    parser.add_argument("-d","--device_cpu", help="Use CPU to Train", action="store_true")
+    
+    
+    
 
     args = parser.parse_args()
     
     settings['epochs'] = args.epochs
+    if args.device_cpu:
+        device_name = 'cpu'
+        
+    print(f'Using {device_name} to train')
 
     
     if args.percent < 100:

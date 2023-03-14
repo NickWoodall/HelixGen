@@ -6,7 +6,9 @@
 **/clusterRef
 GraphGen/scores/*
 GraphGen/output/*
+!GraphGen/output/
 output/*
+!output
 **/GraphGen/log
 **/Clustering/data/clusterRef
 data/4H_dataset/LoopsToFit/*
@@ -20,6 +22,7 @@ data/4H_dataset/str_models_test/*
 *.ipynb_checkpoints
 *.npz
 *.png
+*.zip
 log/*
 **/__pycache__
 loop_struct.txt

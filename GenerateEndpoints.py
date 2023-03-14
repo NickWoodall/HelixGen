@@ -158,7 +158,7 @@ class BatchRecon():
             axisRot = normalize(np.cross(vector,zUnit))
             ang = angle_two_vectors(vector, zUnit)
 
-            #mod here to one decimal?
+            
             length = int(np.round(np.linalg.norm(p2-p1)/1.51,decimals=2))
             halfLen = int(length/2)
             aRot=np.hstack((axisRot,[1]))

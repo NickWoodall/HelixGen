@@ -12,7 +12,6 @@ from pymol import cmd, stored, selector
 import sys
 
 import numpy as np
-import matplotlib.pyplot as plt
 from lmfit import Parameters,minimize,report_fit # fot fitting helix
 import os
 import copy
@@ -1018,7 +1017,7 @@ class HelicalProtein():
     
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description =" 4 Helix data data/bCov_4H_dataset/BCov_Models/  a few failures expected")
+    parser = argparse.ArgumentParser(description =" 4 Helix data data/4H_dataset/models/  a few failures expected")
     parser.add_argument("inDirec", help="Directory with Helical Protein.")
     parser.add_argument("outFile", help="Output File Name")
     args = parser.parse_args()
