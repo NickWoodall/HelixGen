@@ -25,6 +25,5 @@ data/4H_dataset/str_models_test/*
 *.zip
 log/*
 **/__pycache__
-loop_struct.txt
 *FullSet*
 refData_scaler.gz

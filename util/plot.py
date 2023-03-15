@@ -12,7 +12,7 @@ import time
 #from pickle import dump
 import joblib
 import argparse
-
+#REMVOED   SOME MATPLOTLIB PROBLEMS FROM ENV, CAN USE TO PLOT TRAIN / LOSS
 
 def make_plot_orig(loss, d_vals, save_name=None):
     """Plot Generator and Discriminator losses"""

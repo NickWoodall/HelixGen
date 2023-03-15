@@ -1193,7 +1193,7 @@ def bb_analyze(name,batch=32,z=12,loopTry=True,print_output=True,analysisOnly=Tr
 def bb_loop(name,batch=32,z=12,loopTry=True,print_output=True,analysisOnly=False, outDirec='', maxTry=32):
     """Gets backbones stats recon error, clashes, precent core and looped success for loaded endpoints."""
     
-    epObj = ge.EP_Recon(name)
+    epObj = ge.EP_Recon.from_np_file(name)
     epObj.to_npose()
     
     cc =  []
@@ -1242,6 +1242,11 @@ if __name__ == "__main__":
     parser.add_argument("-z", "--genInputSize", help="Size of vector to input to generator",default=12, type=int)
     parser.add_argument("-v", "--verbose", help="Display progress", action="store_true")
     args = parser.parse_args()
+    
+    if args.outdirec == "output/":
+        if not os.path.exists("output/"):
+            os.makedirs("output/")
+    
 
     if args.endpoints:
         if args.infile == "data/BestGenerator":

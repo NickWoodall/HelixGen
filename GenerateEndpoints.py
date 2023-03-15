@@ -54,15 +54,27 @@ class BatchRecon():
         self.iu1 = np.triu_indices(self.size, 1)
 
     
-    def generate(self,z,batch_size=24):
+    def generate(self,z, input_z=None, batch_size=24):
         """Generate distance map."""
         
         self.batch_size = batch_size
         z_size = z
-
-        input_z = tf.random.uniform(shape=(batch_size, z_size), minval=-1, maxval=1)
         
-        g_output = self.g(input_z, training=False)
+        
+        
+        if input_z is not None:
+            input_z = input_z
+            batch_size = input_z.shape[0]
+            if batch_size<2:
+                batch_size = 2
+                input_z = np.repeat(input_z,2,axis=1)
+                
+            self.input_z = input_z
+        else:
+            self.input_z = tf.random.uniform(shape=(batch_size, z_size), minval=-1, maxval=1)
+        
+               
+        g_output = self.g(self.input_z, training=False)
         g_output = tf.reshape(g_output, (batch_size, self.feats))
     
         g_output = g_output.numpy()
@@ -210,10 +222,18 @@ class BatchRecon():
 class EP_Recon():
     """Parrallel Class to BatchRecon to loading endpoints from elsewhere and run LoopedEndpoints"""
     
-    def __init__(self, fname, direc=None):
-        
+    
+    
+    def __init__(self, endpoints_in):
+        self.endpoints_list = endpoints_in.copy()
+    
+    @classmethod 
+    def from_np_file(cls, fname):
+
         rr = np.load(f'{fname}.npz', allow_pickle=True)
-        self.endpoints_list = [rr[f] for f in rr.files][0]
+        endpoints_list = [rr[f] for f in rr.files][0]
+        return cls(endpoints_list)
+    
     
     def to_npose(self):
 
@@ -287,20 +307,21 @@ class EP_Recon():
         return self.npose_list
 
 
-def generate_endpoints(genName='data/BestGenerator',outName='gen_ep',batch_size=32,z=12):
+def generate_endpoints(genName='data/BestGenerator',outName='gen_ep',batch_size=32,z=12, outDirec="output/"):
     br = BatchRecon(name=genName)
     br.generate(z,batch_size=batch_size)
-    endpoint_list = br.MDS_reconstruct_()
-    ft.saveAsNumpy(endpoint_list,outName)
+    endpoint_list = np.array(br.MDS_reconstruct_())
+    np.savez_compressed(f'{outDirec}/{outName}.npz',ep_list=endpoint_list)
 
-def generate_straight_helices(genName='data/BestGenerator',outName='gen_ep.pdb',batch_size=32,z=12):
+def generate_straight_helices(genName='data/BestGenerator',outName='gen_ep',batch_size=32,z=12, outDirec="output/"):
     br = BatchRecon(name=genName)
     br.generate(z,batch_size=batch_size)
     br.MDS_reconstruct_()
     br.to_npose()
-    nu.dump_npdb(br.npose_list,outName)
+    for i,x in enumerate(br.npose_list):
+        nu.dump_npdb(x,f'{outDirec}/{outName}_{i}.pdb')
     
-def generate_dist_dihe(genName='data/BestGenerator',outName='gen_ep',batch_size=32,z=12):
+def generate_dist_dihe(genName='data/BestGenerator',outName='gen_ep_dist_dihe',batch_size=32,z=12, outDirec="output/"):
     br = BatchRecon(name=genName)
     br.generate(z,batch_size=batch_size)
     br.MDS_reconstruct_()
@@ -308,7 +329,7 @@ def generate_dist_dihe(genName='data/BestGenerator',outName='gen_ep',batch_size=
     df = pd.DataFrame(data=fits, columns=label)
     df = ft.prepData_Str(df)
     df1 = ft.contact_Dist_Dihedral(df)
-    ft.saveAsNumpy(df1,outName)
+    ft.saveAsNumpy(df1,outName,direc=outDirec)
 
 
 
@@ -321,20 +342,25 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generates endpoints by Default. Also Straight Helices and Dist_Dihe for Clustering")
     
     parser.add_argument("-b","--batch", help="Number of Endpoints to Generate",  default=32, type=int)
-    parser.add_argument("-i", "--infile", help="Location of generator network, No File extension. MinMax name needs to be of form {name}_mm", default="data/FullSet")
+    parser.add_argument("-i", "--infile", help="Location of generator network, No File extension. MinMax name needs to be of form {name}_mm", default="data/BestGenerator")
     parser.add_argument("-o", "--outfile", help="output file name", default="generated_ep")
-    parser.add_argument("-s", "--straight_helix", help="Output as straight helices", action="store_true")
+    parser.add_argument("-s", "--straight_helix", help="Output as straight helices, pdb files", action="store_true")
     parser.add_argument("-d", "--dist_dihe", help="Output as distance_dihedral", action="store_true")
     parser.add_argument("-z", "--genInputSize", help="Size of vector to input to generator",default=12, type=int)
+    parser.add_argument("--outDirec", help="Output Directory", default="output/")
     args = parser.parse_args()
+    
+    if args.outDirec == "output/":
+        if not os.path.exists("output/"):
+            os.makedirs("output/")
     
 
     if args.straight_helix:
-        generate_straight_helices(genName=args.infile,outName=f'{args.outfile}.pdb',z=args.genInputSize)
+        generate_straight_helices(genName=args.infile,outName=f'{args.outfile}',z=args.genInputSize, outDirec=args.outDirec)
     elif args.dist_dihe:
-        generate_dist_dihe(genName=args.infile,outName=args.outfile,batch_size=args.batch,z=args.genInputSize)
+        generate_dist_dihe(genName=args.infile,outName=args.outfile,batch_size=args.batch,z=args.genInputSize, outDirec=args.outDirec)
     else:
-        generate_endpoints(genName=args.infile,outName=args.outfile,batch_size=args.batch,z=args.genInputSize)
+        generate_endpoints(genName=args.infile,outName=args.outfile,batch_size=args.batch,z=args.genInputSize, outDirec=args.outDirec)
                         
     
 #generate_dist_dihe('data/BestGenerator','Clustering/data/test',batch_size=5024)

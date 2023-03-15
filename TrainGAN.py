@@ -71,13 +71,6 @@ def saveNetwork_Scaler(genMod,disMod,scaler,name,direc='data/'):
     joblib.dump(scaler, f'{direc}{name}_mm.gz')
     genMod.save(f'{direc}{name}.h5',overwrite=True,include_optimizer=True, save_format='h5')
     disMod.save(f'{direc}{name}disc.h5',overwrite=True,include_optimizer=True, save_format='h5')
-    
-def saveTrainLoss(loss_in,dvals_in,name,direc='data/'):
-    
-    data = [loss_in,dvals_in]
-
-    with open(f'{direc}{name}.pkl','wb') as f:
-        pickle.dump(data, f)   
         
 def loadTrainLoss(name,direc='data/'):
  
@@ -118,7 +111,7 @@ def init_model(X_train, y_train, batch=64 ,zIn=12, g_layers=3, g_size=64, d_laye
     return  gen_model, disc_model, ds_train
     
 
-def percentRun(trainSettings, percentUsed = 100,feature_name='data/endpoint_distancemap_phi',saveLoss=True,nameOut=None):
+def percentRun(trainSettings, percentUsed = 100,feature_name='data/endpoint_distancemap_phi',nameOut=None):
     X_train, y_train, mm = prepData(feature_name,perData=percentUsed)
     print(f'X_train shape: {X_train.shape}')
     
@@ -240,9 +233,6 @@ def percentRun(trainSettings, percentUsed = 100,feature_name='data/endpoint_dist
     outName = f'{nameRun[1:]}'
     saveNetwork_Scaler(gen_model, disc_model, mm, outName, direc=f'{base_folder}')
     
-    if saveLoss:
-        name = f'loss_{nameRun[1:]}'
-        saveTrainLoss(all_losses,all_d_vals,name,direc=f'{base_folder}/loss/')
     
 
 if __name__ == "__main__":
@@ -269,7 +259,6 @@ if __name__ == "__main__":
 
     parser.add_argument("feature_data", help="Distance Map of 4 Helix Endpoints with 4 phi values at end as .npz", default='data/endpoint_distancemap_phi')
     parser.add_argument("-o","--out_name", help="Save name for log file. Defaults to number of examples" )
-    parser.add_argument("-s","--save_loss", help="Save Generator and Discrimanator Losses For Plotting", action="store_true")
     parser.add_argument("-p","--percent", help="train on a random subset of data. Enter percent desired.", default = 100, type=int)
     parser.add_argument("-e","--epochs", help="number of epochs to train", default = 300, type=int)
     parser.add_argument("-d","--device_cpu", help="Use CPU to Train", action="store_true")
@@ -287,9 +276,9 @@ if __name__ == "__main__":
 
     
     if args.percent < 100:
-        percentRun(settings, percentUsed = args.percent,feature_name=args.feature_data,saveLoss=args.save_loss, nameOut=args.out_name)
+        percentRun(settings, percentUsed = args.percent,feature_name=args.feature_data, nameOut=args.out_name)
     else:
-        percentRun(settings, percentUsed = 100,feature_name=args.feature_data,saveLoss=args.save_loss, nameOut=args.out_name)
+        percentRun(settings, percentUsed = 100,feature_name=args.feature_data, nameOut=args.out_name)
 
 
 

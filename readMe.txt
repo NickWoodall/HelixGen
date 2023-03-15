@@ -27,19 +27,17 @@ There are 3 modules here.
 
 
 ------------------------Primary Environment for Helix Fitting, GAN, Looping GAN Outputs---------------------------
-#compatibility issues with starting pymol and tensorflow, pymol is used to read pdbs
-#recommended install for env that can run all files in this directory without 
+#compatibility issues for environments with pymol and tensorflow, pymol is used to read pdbs an embedded mistake at this point
+#run commands in order to generate environment
 
 	conda create --name hgen python=3.8
 	conda install -c conda-forge cudatoolkit=10.1.243 cudnn=7.6.5
 	conda install -c anaconda tensorflow-gpu==2.3.0
-	
 	conda install -c schrodinger pymol=2.4
 	conda install shapely --channel conda-forge
-	conda install scikit-learn=0.23.2
 	conda install pandas
 	conda install numba
-	conda install matplotlib
+	conda install scikit-learn=0.23.2
 
 	pip install lmfit
 	pip install localization
@@ -70,14 +68,14 @@ python HelixFit.py data/4H_dataset/models data/Fits_4H_new
 python FitTransform.py data/Fits_4H.csv data/Fits_4H_dm_phi -d
 
 #train GAN and save the loss plots  -TESTED
-python TrainGAN.py data/Fits_4H_dm_phi.npz -o FullSet -s
+python TrainGAN.py data/Fits_4H_dm_phi.npz -o FullSet
 
 
 -----------------------Workflow for generating and designing 4 helix bundles-------------------
 #remakes csv object loop data without re-fitting the loops, use -r to redo the loop fits  -TESTED
 python util_LoopCreation.py -j 
 
-#Generate and loop 8 generated 4h topologies, you must have downloaded loop_struct.txt and recreated objects with python util_LoopCreation.py -j 
+#Generate and loop 8 generated 4h topologies, you must have downloaded loop_struct.txt and recreated objects with python util_LoopCreation.py -j # -TESTED
 python LoopEndpoints.py -b 8
 
 #in GraphGen Directory, predict sequence and relax looped structures from above, need to switch to pytorch/Rosetta environment
@@ -87,13 +85,7 @@ python Predict_Design.py -i  ../output -n test1
 --------------------------------Training the GAN-------------------------------------
 
 
-
-
-
 #copy the trained GAN and the min max scaler to the data folder for convenience
-
-#if you used -s in TrainGAN.py you may plot and view the loss data in util/plot.py
-python util/plot.py -i log/GAN_FullSet/loss/loss_FullSet.pkl -o log/GAN_FullSet/loss/lossplot.png
 
 #You can train on a reduced version of the dataset using the -p option. This trains on 278 examples.
 #Upping the epochs to 1000 for 278 examples.
@@ -141,3 +133,12 @@ python TrainGraphGen.py -i data/refSet
 python Test_GraphGen.py -s ../data/4H_dataset/models -i ../data/4H_dataset/str_models/ -g data/{checkpoint name here} -t -l 100
 
 
+
+
+
+#
+Generative Models for Graph-Based Protein Design by John Ingraham, Vikas Garg, Regina Barzilay and Tommi Jaakkola, NeurIPS 2019.
+https://github.com/jingraham/neurips19-graph-protein-design
+
+# SpectralNet
+![cc](https://user-images.githubusercontent.com/9156971/34493923-1abbabe8-efbc-11e7-8788-66c62bc91f4d.png)
