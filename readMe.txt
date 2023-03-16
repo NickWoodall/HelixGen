@@ -37,6 +37,7 @@ There are 3 modules here.
 	conda install pandas
 	conda install numba
 	conda install scikit-learn=0.23.2
+	conda install matplotlib
 
 	pip install lmfit
 	pip install localization

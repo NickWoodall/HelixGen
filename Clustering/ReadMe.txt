@@ -5,7 +5,7 @@ The spectral net python environment was quite tricky to build and get compatible
 So this method requires passing data between the environments and organizing the scaler. Awkward.
 
 
-Primary Env for helix fit:
+Use Primary Env for helix fit:
 
 #transform the helix fits into a format more useful for clustering, (midpoint distance map and dihedral angles)
 #save in clustering data folder
