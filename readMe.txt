@@ -4,12 +4,11 @@
 There are 3 modules here.
 
 1. This top level directory fits and generates helical backbones.
-	a. Fits the helical proteins with HelixFit.py . 
-        b. Transforms the parameters for mL with FitTransform.py
-        c. Trains the GAN with TrainGAN.py with the endpoint distance map output from FitTransform.py.
-        d. GenerateEndpoints.py uses the GAN to generate helical endpoints. (aka straight unlooped helices)
-        e. LoopEndpoints.py finds many looped solutions around the general topology from the unlooped helices from the GAN.
-		a. Can generate endpoints from GAN as part of script
+	a. Fits the helical proteins with HelixFit.py 
+    b. Transforms the parameters for mL with FitTransform.py
+    c. Trains the GAN with TrainGAN.py with the endpoint distance map output from FitTransform.py.
+    d. GenerateEndpoints.py uses the GAN to generate helical endpoints. (aka straight unlooped helices)
+    e. LoopEndpoints.py finds many looped solutions around the general topology from the unlooped helices from the GAN.
 
 2. The GraphGen directory contains code to predict the sequence of 4 helix proteins and relax to a reasonable structure.
 	a. Prepares PDB structures for prediction by GraphGen Network with PDBDataset.py
@@ -22,12 +21,12 @@ There are 3 modules here.
 		d3. The reference clusters must be remade from Clustering/data/csv_saves/Remake_Cluster_Scaler.py
 			to maintain produce train/test split
 
-	e. Clustering Directory is required to re-train the graphgen network only
+	e. Clustering Directory is required to re-train the graphgen network with straight helices only
 
 
 ------------------------Primary Environment for Helix Fitting, GAN, Looping GAN Outputs---------------------------
 #compatibility issues for environments with pymol and tensorflow, pymol is used to read pdbs an embedded mistake at this point
-#run commands in order to generate environment
+#run commands in order to generate environment, yml files provided for thoroughness, but will not work
 
 	conda create --name hgen python=3.8
 	conda install -c conda-forge cudatoolkit=10.1.243 cudnn=7.6.5
@@ -41,6 +40,34 @@ There are 3 modules here.
 
 	pip install lmfit
 	pip install localization
+	
+	
+
+
+
+
+
+-----------------------Workflow for generating and designing 4 helix bundles-------------------
+#remakes csv object loop data without re-fitting the loops, use -r to redo the loop fits
+python util_LoopCreation.py -j 
+
+#Generate and loop 8 generated 4h topologies, must have recreated objects with python util_LoopCreation.py -j #
+#defaults to BestGenerator in data/
+python LoopEndpoints.py -b 8
+
+#in GraphGen Directory, predict sequence and relax looped structures from above, need to switch to pytorch/Rosetta environment
+python Predict_Design.py -i  ../output -n test1
+
+
+#generate a single helical protein (more than four helices) along a guide set of endpoints 
+#Defaults to the quarter circle line guide from the paper. To input your own start at the origin with the points with the first move 
+#in the positive Z
+# other options see HELP
+
+python Guided_Midpoint_Buttress.py
+
+
+##!!--Pyrosetta has been muted via its init method in a lot of places which may not give error messages in the case of problems
 
 -----------------------------------------Data sets available for retraining-------------------
 
@@ -63,21 +90,10 @@ python HelixFit.py data/4H_dataset/models data/Fits_4H_new
 #prints shape of saved numpy array
 python FitTransform.py data/Fits_4H.csv data/Fits_4H_dm_phi -d
 
-#train GAN and save the loss plots
+#train GAN 
 python TrainGAN.py data/Fits_4H_dm_phi.npz -o FullSet
 
 
------------------------Workflow for generating and designing 4 helix bundles-------------------
-#remakes csv object loop data without re-fitting the loops, use -r to redo the loop fits
-python util_LoopCreation.py -j 
-
-#Generate and loop 8 generated 4h topologies, you must have downloaded loop_struct.txt and recreated objects with python util_LoopCreation.py -j #
-python LoopEndpoints.py -b 8
-
-#in GraphGen Directory, predict sequence and relax looped structures from above, need to switch to pytorch/Rosetta environment
-python Predict_Design.py -i  ../output -n test1
-
-##!!--Pyrosetta has been muted via its init method in a lot of places which may not give error messages in the case of problems
 --------------------------------Training the GAN-------------------------------------
 
 
@@ -85,9 +101,9 @@ python Predict_Design.py -i  ../output -n test1
 
 #You can train on a reduced version of the dataset using the -p option. This trains on 278 examples.
 #Upping the epochs to 1000 for 278 examples.
-python TrainGAN.py data/Fits_4H_dm_phi.npz -o OnePer -s -p 1 -e 1000
+python TrainGAN.py data/Fits_4H_dm_phi.npz -o OnePer -p 1 -e 1000
 
-
+#transfer FullSet/ from retrain minmax scaler from log directory to data for this line to work
 #produce generated loop structures from generator, use -a to not output the .pdb files and just get stats
 python LoopEndpoints.py -i data/FullSet -a
 
