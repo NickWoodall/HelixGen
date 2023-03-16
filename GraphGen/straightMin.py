@@ -168,13 +168,17 @@ def str_min(inDire,filename,oD):
 if __name__ == "__main__":
     
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-o','--outDirec', help='Place to put straightened proteins.', default = 'output/')
-    parser.add_argument('-i','--inDirec', help='Protein directory to fit and straighten', default = '../data/BCov_4H_dataset/BCov_Models')
+    parser = argparse.ArgumentParser(description="Minimize to straight Fit. File not written errors may be hard to see, ensure models are being written.")
+    parser.add_argument('-o','--outDirec', help='Place to put straightened proteins.', default = '../data/4H_dataset/str_models/')
+    parser.add_argument('-i','--inDirec', help='Protein directory to fit and straighten', default = '../data/4H_dataset/models/')
     parser.add_argument('-j','--jran', help='Constant Seed to Initialize pyrosetta with', default = 1111111, type=int)
+    #Need random seed or network learns minimization
     args = parser.parse_args()
     #pyrosetta.init(f'-beta -constant_seed True -jran {args.jran}')
     
+    
+    if not os.path.exists(args.outDirec):
+        os.makedirs(args.outDirec)
     
     fileList = os.listdir(args.inDirec)
 
@@ -184,10 +188,10 @@ if __name__ == "__main__":
         #protect against not 4 helices detected; ignore these
         try:
             randNum = random.randrange(0, 9999999, 1)
-            pyrosetta.init(f'-beta -constant_seed True -jran {randNum}')
+            pyrosetta.init(f'-beta -constant_seed True -jran {randNum}') #Need random seed or network learns minimization
             str_min(args.inDirec,x,args.outDirec)
         except:
-            print(f'Error loading {x}')
+            print(f'Error loading {x} probably due to helix minimum fail')
 
     
     

@@ -83,6 +83,9 @@ if __name__ == "__main__":
 
     pyrosetta.init("-beta -mute all")
     
+    if not os.path.exists(args.outDirec):
+        os.makedirs(args.outDirec)
+    
     
     sP = ps.getSeq(args.graphGen, direcName = args.inDirec, hidden=64)
     mutate_relax(sP,direc=args.inDirec,outName=args.outName, outDirec=args.outDirec)

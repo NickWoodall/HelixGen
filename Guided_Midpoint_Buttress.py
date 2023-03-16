@@ -1,6 +1,15 @@
-import tensorflow as tf
 import os
-import sys
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+import tensorflow as tf
+
+if tf.config.list_physical_devices('GPU'):
+    device_name = tf.test.gpu_device_name()
+    print(f'Device GPU availabe: {device_name}')
+else:
+    device_name = 'cpu'
+    print(f'Only CPU Device available: {device_name}')
+
 from math import cos,sin,tan,asin,acos,radians,sqrt,degrees,atan,atan2,copysign
 import numpy as np
 
@@ -34,6 +43,7 @@ import GenerateEndpoints as ge
 import HelixFit as hf
 import FitTransform as ft
 import util.RotationMethods as rm
+
     
     
     
@@ -993,6 +1003,12 @@ if tf.config.list_physical_devices('GPU'):
 else:
     device_name = 'CPU'
 rate=0.05
+
+
+
+
+
+
 # if ~devtype.__eq__(device_name):
 #just do cpu
 # device_name = 'CPU'

@@ -1,5 +1,3 @@
-*Deal with advice for environment creation, of fa_tfpy, specNetGPU, and TorchGraph
-
 *check restricted google drive downloads
 
 
@@ -24,6 +22,7 @@ There are 3 modules here.
 		d3. The reference clusters must be remade from Clustering/data/csv_saves/Remake_Cluster_Scaler.py
 			to maintain produce train/test split
 
+	e. Clustering Directory is required to re-train the graphgen network only
 
 
 ------------------------Primary Environment for Helix Fitting, GAN, Looping GAN Outputs---------------------------
@@ -42,20 +41,16 @@ There are 3 modules here.
 	pip install lmfit
 	pip install localization
 
------------------------------------------Data sets available for retraining, Loop Structures required for Looping Endpoints-------------------
-
--for looping endpoints:
-
-download loop structures into data/ from [https://drive.google.com/file/d/16GuyJPYWOEW0Ud-sPrklGuFuuKwk6sjO/view?usp=sharing]
+-----------------------------------------Data sets available for retraining-------------------
 
 -Retraining the GAN from scratch. Can use provided Fits_4H.csv and skip
 
-4 helix reference models into data/4H_dataset/models from [https://drive.google.com/drive/folders/1p8PgjTZsJ6Di8gbvVLx3lhUsygurGEYN?usp=sharing] #restricted
+4 helix reference models into data/4H_dataset/models from [https://drive.google.com/drive/folders/1p8PgjTZsJ6Di8gbvVLx3lhUsygurGEYN?usp=sharing]
 
 -for Retraining GraphGen_4H
 
-4 helix reference models into data/4H_dataset/ from [https://drive.google.com/drive/folders/1p8PgjTZsJ6Di8gbvVLx3lhUsygurGEYN?usp=sharing] #restricted
-4 helix straight models into data/4H_dataset/ from [https://drive.google.com/drive/folders/1D7IA2jr1dIJFqSlbz30TDCbmJ229Myqc?usp=sharing] #restricted, can be remade from reference
+4 helix reference models [above]
+4 helix straight models into data/4H_dataset/ from [https://drive.google.com/drive/folders/1D7IA2jr1dIJFqSlbz30TDCbmJ229Myqc?usp=sharing], can be remade from reference
 
 -------------------------Retraining Network From Scratch--------------------------------
 
@@ -63,25 +58,25 @@ download loop structures into data/ from [https://drive.google.com/file/d/16GuyJ
 #A few warnings especially at the beginning are exptected, will take a few hours
 python HelixFit.py data/4H_dataset/models data/Fits_4H_new
 
-#convert fitted parameters to distance map and phi values of helical endpoints, -TESTED
+#convert fitted parameters to distance map and phi values of helical endpoints
 #prints shape of saved numpy array
 python FitTransform.py data/Fits_4H.csv data/Fits_4H_dm_phi -d
 
-#train GAN and save the loss plots  -TESTED
+#train GAN and save the loss plots
 python TrainGAN.py data/Fits_4H_dm_phi.npz -o FullSet
 
 
 -----------------------Workflow for generating and designing 4 helix bundles-------------------
-#remakes csv object loop data without re-fitting the loops, use -r to redo the loop fits  -TESTED
+#remakes csv object loop data without re-fitting the loops, use -r to redo the loop fits
 python util_LoopCreation.py -j 
 
-#Generate and loop 8 generated 4h topologies, you must have downloaded loop_struct.txt and recreated objects with python util_LoopCreation.py -j # -TESTED
+#Generate and loop 8 generated 4h topologies, you must have downloaded loop_struct.txt and recreated objects with python util_LoopCreation.py -j #
 python LoopEndpoints.py -b 8
 
 #in GraphGen Directory, predict sequence and relax looped structures from above, need to switch to pytorch/Rosetta environment
 python Predict_Design.py -i  ../output -n test1
 
-##!!--Pyrosetta has been muted via its init method in a lot of places which may not give error messages in the case of 
+##!!--Pyrosetta has been muted via its init method in a lot of places which may not give error messages in the case of problems
 --------------------------------Training the GAN-------------------------------------
 
 
@@ -92,7 +87,6 @@ python Predict_Design.py -i  ../output -n test1
 python TrainGAN.py data/Fits_4H_dm_phi.npz -o OnePer -s -p 1 -e 1000
 
 
-
 #produce generated loop structures from generator, use -a to not output the .pdb files and just get stats
 python LoopEndpoints.py -i data/FullSet -a
 
@@ -100,7 +94,7 @@ python LoopEndpoints.py -i data/FullSet -a
 
 2. The Clustering directory using clusters the helical fits using a transformed version of the fits. The clusters are used
    to confirm the diversity of the GAN ouputs and divide the original dataset into train/test. To just prepare the test train
-   datasets, move to Clustering/data/csv_saves/  otherwise follow the readme in the Clustering directory.
+   datasets, move to Clustering/data/csv_saves/  otherwise follow the readme in the Clustering directory to remake.
 
 
 #remake refclus data from csv in Clustering/data/csv_saves/
@@ -108,7 +102,7 @@ python Remake_Cluster_Scaler.py
 
 #move the output to the upper data directory to Clustering/data/ (refData.npz and refData_scaler.gz)
 
-You will need to make a new environment to support pytorch that supports pyrosetta (ubuntu required for pyrosetta) training the network does not require pyrosetta
+You will need to make a new environment to support pytorch that supports pyrosetta (linux required for pyrosetta) training the network does not require pyrosetta
 Activate this environment and move to the GraphGenDirectory
 
 3. Train the GraphGen Network
@@ -116,7 +110,7 @@ Activate this environment and move to the GraphGenDirectory
 #straighten the original dataset using helical fits via straighmin.py using pyrosetta
 #requires pyrosetta, you may also download a straightened dataset from google drive (link above) instead
 #make a directory str_models inside data/4H_dataset/
-#move to Graphgen direcotry
+#move to Graphgen directory
 python straightMin.py -i ../data/4H_dataset/models -o ../data/4H_dataset/str_models/
 
 
@@ -134,7 +128,9 @@ python Test_GraphGen.py -s ../data/4H_dataset/models -i ../data/4H_dataset/str_m
 
 
 
+Libraries included in the repository
 
+npose protein utilies for fragment assembly, backbone metrics, etc from Brian Coventry - many thanks!
 
 #
 Generative Models for Graph-Based Protein Design by John Ingraham, Vikas Garg, Regina Barzilay and Tommi Jaakkola, NeurIPS 2019.

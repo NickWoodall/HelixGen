@@ -191,10 +191,13 @@ def pdbSeq(fname,direc=''):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("-d", "--pdbdirec", help="directory to load pdb files from", default="../data/bCov_4H_dataset/BCov_Models/")
-    parser.add_argument("-n", "--numStruct", help="limits number of structures to load", default=1000, type=int)
-    parser.add_argument("-g", "--generator", help="generator model to load", default="data/best_checkpoint_epoch53.pt")
+    parser.add_argument("-d", "--pdbdirec", help="directory to load pdb files from", default="../data/4H_dataset/models/")
+    parser.add_argument("-n", "--numStruct", help="limits number of structures to load. Default 1000", default=1000, type=int)
+    parser.add_argument("-g", "--generator", help="generator model to load", default="data/Best_GraphGen.pt")
     parser.add_argument("-o", "--outputFile", help="output as text sequence, name newline",default="output/seqOut.txt")
+    
+    if not os.path.exists("output/"):
+        os.makedirs("output/")
     
     args = parser.parse_args()
     
