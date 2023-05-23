@@ -1,6 +1,3 @@
-*check restricted google drive downloads
-
-
 There are 3 modules here.
 
 1. This top level directory fits and generates helical backbones.
@@ -25,12 +22,14 @@ There are 3 modules here.
 
 
 ------------------------Primary Environment for Helix Fitting, GAN, Looping GAN Outputs---------------------------
+#optimized for windows, need alter cuda/cudnn, tensorflow verions in linux
 #compatibility issues for environments with pymol and tensorflow, pymol is used to read pdbs an embedded mistake at this point
 #run commands in order to generate environment, yml files provided for thoroughness, but will not work
 
 	conda create --name hgen python=3.8
+	conda activate hgen
 	conda install -c conda-forge cudatoolkit=10.1.243 cudnn=7.6.5
-	conda install -c anaconda tensorflow-gpu==2.3.0
+	pip install tensorflow-gpu==2.3
 	conda install -c schrodinger pymol=2.4
 	conda install shapely --channel conda-forge
 	conda install pandas
@@ -55,7 +54,8 @@ python util_LoopCreation.py -j
 #defaults to BestGenerator in data/
 python LoopEndpoints.py -b 8
 
-#in GraphGen Directory, predict sequence and relax looped structures from above, need to switch to pytorch/Rosetta environment
+#predict sequence and relax looped structures from above, move to GraphGen Directory, need to switch to pytorch/Rosetta environment
+#move back to hgen environment, for other commands
 python Predict_Design.py -i  ../output -n test1
 
 
@@ -66,14 +66,12 @@ python Predict_Design.py -i  ../output -n test1
 
 python Guided_Midpoint_Buttress.py
 
-
-##!!--Pyrosetta has been muted via its init method in a lot of places which may not give error messages in the case of problems
-
 -----------------------------------------Data sets available for retraining-------------------
 
 -Retraining the GAN from scratch. Can use provided Fits_4H.csv and skip
 
-4 helix reference models into data/4H_dataset/models from [https://drive.google.com/drive/folders/1p8PgjTZsJ6Di8gbvVLx3lhUsygurGEYN?usp=sharing]
+4 helix reference pdb files into data/4H_dataset/models from [https://drive.google.com/drive/folders/1p8PgjTZsJ6Di8gbvVLx3lhUsygurGEYN?usp=sharing]
+
 
 -for Retraining GraphGen_4H
 
@@ -123,6 +121,8 @@ You will need to make a new environment to support pytorch that supports pyroset
 Activate this environment and move to the GraphGenDirectory
 
 3. Train the GraphGen Network
+##!!--Pyrosetta has been muted via its init method at the beginning of scripts which may not give error messages in the case of problems
+
 
 #straighten the original dataset using helical fits via straighmin.py using pyrosetta
 #requires pyrosetta, you may also download a straightened dataset from google drive (link above) instead

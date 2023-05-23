@@ -5,9 +5,10 @@
 #.yml file provided for thouroughness, but follow commands below
 
 conda create -n hdes python=3.8
+conda activate hdes
 conda install -c schrodinger pymol=2.4
 conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
-conda install pytorch -c https://levinthal:paradox@conda.rosettacommons.org
+conda install pyrosetta -c https://levinthal:paradox@conda.rosettacommons.org
 conda install matplotlib
 conda install numba
 conda install seaborn

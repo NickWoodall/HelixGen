@@ -23,7 +23,6 @@ else:
     device_name = 'cpu'
     print(f'Only CPU Device available: {device_name}')
 
-
 def prepData(name,perData=100):
     #prepare transformed Helix Fit Parameters for GAN from FitTransform
     
