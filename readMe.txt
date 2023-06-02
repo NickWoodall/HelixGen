@@ -1,3 +1,7 @@
+Code for A Generative Model for Creating Path Delineated Helical Proteins
+
+https://www.biorxiv.org/content/10.1101/2023.05.24.542095v1
+
 There are 3 modules here.
 
 1. This top level directory fits and generates helical backbones.
@@ -22,9 +26,9 @@ There are 3 modules here.
 
 
 ------------------------Primary Environment for Helix Fitting, GAN, Looping GAN Outputs---------------------------
-#optimized for windows, need alter cuda/cudnn, tensorflow verions in linux
-#compatibility issues for environments with pymol and tensorflow, pymol is used to read pdbs an embedded mistake at this point
-#run commands in order to generate environment, yml files provided for thoroughness, but will not work
+
+#compatibility issues for environments with pymol and tensorflow, versions optimized for windows cudnn, cuda, tensorflow
+#run commands in order to generate environment, yml files provided for thoroughness
 
 	conda create --name hgen python=3.8
 	conda activate hgen
